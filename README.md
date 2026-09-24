@@ -1,1 +1,2 @@
-Mock_api_engine
+# Mock-api-engine
+Это динамический движок для генерации api заглушек для frontend разработчиков.
