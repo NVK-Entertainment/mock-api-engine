@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+#    depends_on:
+#      database:
+#        condition: service_healthy
+    restart: on-failure:3
+#    networks:
+#      - mock-api-net
+
+#  database:
+#    image: postgres:17-alpine
+#    container_name: postgres
+#    environment:
+#      POSTGRES_USER: ${DB_USER}
+#      POSTGRES_PASSWORD: ${DB_PASSWORD}
+#      POSTGRES_DB: ${DB_DB}
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 5
+#    restart: unless-stopped
+#    networks:
+#      - mock-api-net
+#
+#networks:
+#  mock-api-net:
+#    driver: bridge
+#
+#volumes:
+#  postgres_data:

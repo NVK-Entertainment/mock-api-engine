@@ -1,0 +1,25 @@
+# Environment
+.venv
+venv
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Git and IDE
+.git
+.gitignore
+.idea
+.vscode
+
+# Docker and others
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md
