@@ -10,21 +10,22 @@ from sqlalchemy import (
     Integer,
     String,
     Enum,
-    JSON,
-    DATETIME,
     Boolean,
     func,
     UniqueConstraint,
     CheckConstraint,
+    ForeignKey,
     )
+from sqlalchemy.dialects.postgresql import JSONB
 from typing import Any
 from datetime import datetime
 # HTTP-methods storage class
-from models.methods import Methods
+from src.models.helpers.methods import Methods
+from src.models.helpers.time_stamps import TimeStampMixin
 
 
 # Endpoints table
-class Endpoint(Base):
+class Endpoint(TimeStampMixin, Base):
     __tablename__ = "endpoints"
 
     # Record id
@@ -32,10 +33,11 @@ class Endpoint(Base):
         Integer,
         primary_key=True
     )
-    #project_id: Mapped[int] = mapped_column(
-    #    Integer,
-    #    nullable=False,
-    #)
+    project_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('projects.id'),
+        nullable=True,
+    )
     # HTTP-methods
     method: Mapped[str] = mapped_column(
         Enum(Methods),
@@ -43,7 +45,7 @@ class Endpoint(Base):
     )
     # Handle path
     path: Mapped[str] = mapped_column(
-        String(1024),
+        String(512),
         nullable=False,
     )
     # Handle status code
@@ -52,13 +54,14 @@ class Endpoint(Base):
         nullable=False,
     )
     # Handle header
-    response_headers: Mapped[Any] = mapped_column(
-        JSON,
+    response_headers: Mapped[dict[str, str]] = mapped_column(
+        JSONB,
         nullable=False,
+        default=dict
     )
     # Handle response body
     response_body: Mapped[Any] = mapped_column(
-        JSON,
+        JSONB,
         nullable=True,
     )
     # Handle active status
@@ -68,18 +71,20 @@ class Endpoint(Base):
         default=True,
         index=True,
     )
-    # Timestamps fields
-    created_at: Mapped[datetime] = mapped_column(
-        DATETIME,
-        nullable=False,
-        default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DATETIME,
-        nullable=True,
-    )
 
+    # Table constraints
     __table_args__ = (
-        CheckConstraint("status_code >= 100 AND status_code <= 599"),
-        UniqueConstraint('project_id', 'method', 'status_code', 'path')
+        # Table fields limiter
+        CheckConstraint(
+            "status_code >= 100 AND status_code <= 599",
+            name="check_status_code_range"
+        ),
+        # Sequence of unique fileds in one row
+        UniqueConstraint(
+            'project_id', 
+            'method', 
+            'status_code', 
+            'path',
+            name='uq_endpoint_project_method_path'
+        )
     )
