@@ -1,5 +1,5 @@
 # Fastapi dependencies
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 # Database dependencies
 from database.db import engine
@@ -22,3 +22,4 @@ app = FastAPI(
 @app.get('/', include_in_schema=False)
 def healthcheck() -> dict:
     return {'Healthcheck':'passed!'}
+
