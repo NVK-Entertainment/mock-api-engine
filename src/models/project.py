@@ -1,5 +1,5 @@
 # Database dependencies
-from database.db import Base
+from src.database.db import Base
 # SQL dependencies
 from sqlalchemy.orm import (
     Mapped, 
@@ -12,8 +12,9 @@ from sqlalchemy import (
     String,
     )
 # HTTP-methods storage class
-from src.models.helpers.methods import Methods
 from src.models.helpers.time_stamps import TimeStampMixin
+# Models
+from src.models.endpoint import Endpoint
 
 
 # Project object ORM model

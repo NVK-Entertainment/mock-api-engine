@@ -2,7 +2,11 @@
 from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 # Database dependencies
-from database.db import engine
+from src.database.db import engine
+# API routers
+from src.api.v1.endpoint_router import router as endpoint_router
+# Models
+import src.models
 
 
 # App's lifespan function
@@ -18,8 +22,14 @@ app = FastAPI(
     lifespan=lifespan
     )
 
+# API routers connection
+app.include_router(endpoint_router)
+
 # Healthcheck
-@app.get('/', include_in_schema=False)
+@app.get(
+    '/', 
+    include_in_schema=False, 
+    status_code=status.HTTP_200_OK,
+)
 def healthcheck() -> dict:
     return {'Healthcheck':'passed!'}
-

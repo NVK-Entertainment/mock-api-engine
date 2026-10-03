@@ -2,7 +2,7 @@
 from pydantic_settings import SettingsConfigDict
 from pydantic_settings import BaseSettings
 # Context dependencies
-from core.dependencies import BASE_DIR
+from src.core.dependencies import BASE_DIR
 
 
 # Settings configuration class

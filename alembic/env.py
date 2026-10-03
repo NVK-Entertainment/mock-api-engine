@@ -7,6 +7,8 @@ from alembic import context
 
 # Database connection url, Base metaclass (data about all models)
 from src.database.db import DB_URL, Base
+# Models
+import src.models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

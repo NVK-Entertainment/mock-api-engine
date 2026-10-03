@@ -1,5 +1,5 @@
 # Database dependencies
-from database.db import Base
+from src.database.db import Base
 # SQL dependencies
 from sqlalchemy.orm import (
     Mapped, 
@@ -11,17 +11,16 @@ from sqlalchemy import (
     String,
     Enum,
     Boolean,
-    func,
     UniqueConstraint,
     CheckConstraint,
     ForeignKey,
     )
 from sqlalchemy.dialects.postgresql import JSONB
 from typing import Any
-from datetime import datetime
 # HTTP-methods storage class
-from src.models.helpers.methods import Methods
+from src.models.helpers.methods import HttpMethods
 from src.models.helpers.time_stamps import TimeStampMixin
+from src.models.helpers.handle_scenario import HandleScenario
 
 
 # Endpoints table
@@ -39,8 +38,8 @@ class Endpoint(TimeStampMixin, Base):
         nullable=True,
     )
     # HTTP-methods
-    method: Mapped[str] = mapped_column(
-        Enum(Methods),
+    method: Mapped[HttpMethods] = mapped_column(
+        Enum(HttpMethods),
         nullable=False,
     )
     # Handle path
@@ -52,6 +51,12 @@ class Endpoint(TimeStampMixin, Base):
     status_code: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
+    )
+    # Handle scenario ('failure'/'success'/etc)
+    scenario: Mapped[HandleScenario] = mapped_column(
+        Enum(HandleScenario),
+        nullable=False,
+        default=HandleScenario.SUCCESS
     )
     # Handle header
     response_headers: Mapped[dict[str, str]] = mapped_column(
@@ -83,8 +88,8 @@ class Endpoint(TimeStampMixin, Base):
         UniqueConstraint(
             'project_id', 
             'method', 
-            'status_code', 
+            'scenario', 
             'path',
-            name='uq_endpoint_project_method_path'
+            name='uq_endpoint_project_method_scenario_path'
         )
     )
