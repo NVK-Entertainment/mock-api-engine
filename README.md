@@ -4,7 +4,7 @@
 ## ⚙️ Настройка:
 ### 1. Клонирование репозитория:
 ```bash
-git clone <ссылка на репозиторий>
+git clone https://github.com/NVK-Entertainment/mock-api-engine
 ```
 ### 2. Настройка переменных окружения:
 ```bash

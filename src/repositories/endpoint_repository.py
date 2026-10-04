@@ -78,7 +78,7 @@ class EndpointRepository:
             is_active = endpoint_data.is_active,
         )
 
-        # Addition  to local session list
+        # Addition to local session list
         self.session.add(new_endpoint)
 
         return new_endpoint
