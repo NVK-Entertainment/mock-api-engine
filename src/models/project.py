@@ -31,6 +31,7 @@ class Project(TimeStampMixin, Base):
         String(32),
         index=True,
         nullable=False,
+        unique=True,
     )
 
     # List of api handles that contains in the project
