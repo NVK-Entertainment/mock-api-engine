@@ -32,7 +32,7 @@ class Endpoint(TimeStampMixin, Base):
         Integer,
         primary_key=True
     )
-    project_id: Mapped[int] = mapped_column(
+    project_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey('projects.id'),
         nullable=True,

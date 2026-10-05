@@ -6,6 +6,7 @@ from src.database.db import engine
 # API routers
 from src.api.v1.endpoint_router import router as endpoint_router
 from src.api.v1.project_router import router as project_router
+from src.api.v1.mock_router import router as mock_router
 # Models
 import src.models
 
@@ -26,6 +27,7 @@ app = FastAPI(
 # API routers connection
 app.include_router(endpoint_router, tags=['Endpoints'])
 app.include_router(project_router, tags=['Projects'])
+app.include_router(mock_router, tags=['Mocks'])
 
 # Healthcheck
 @app.get(

@@ -15,6 +15,10 @@ from fastapi import (
 from src.models.endpoint import Endpoint
 # Exceptions
 from sqlalchemy.exc import IntegrityError
+# HTTP methods helper class
+from src.models.helpers.methods import HttpMethods
+# Handle scenario
+from src.models.helpers.handle_scenario import HandleScenario
 
 
 class EndpointService:
@@ -43,6 +47,43 @@ class EndpointService:
                 detail="Endpoint with that ID not found",
             )
         
+        return endpoint
+
+    # Get concrete endpoint by it's project_id, method, path, scenario
+    def get_endpoint_by_params(
+            self,
+            project_id: int | None,
+            method: HttpMethods,
+            path: str,
+            scenario: HandleScenario
+    ) -> Endpoint:
+        """Returns Endpoint object with by given set of parameters
+
+        Parameters:
+        project_id(int): Endpoint's project id
+        
+        method(HttpMethods(str)): Endpoint's (request) method
+        
+        path(str): Request url
+        
+        scenario(HandleScenario(str)): Handle scenario (success/failure, etc)
+
+        Returns:
+        Endpoint: Endpoint object
+        """
+        endpoint = self.endpoint_repo.get_by_route(
+            project_id=project_id,
+            method=method,
+            path=path,
+            scenario=scenario,
+        )
+
+        # Existance check
+        if not endpoint:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Endpoint with this set of parameters is not found"
+            )
         return endpoint
 
     # Get all endpoint (for future(maybe))
@@ -91,7 +132,7 @@ class EndpointService:
 
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Endpoint with this combination of (project_id, method, scenario, path) already exists"
+                detail="Endpoint with this combination of parameters already exists"
             )
 
     # Update concrete endpoint
