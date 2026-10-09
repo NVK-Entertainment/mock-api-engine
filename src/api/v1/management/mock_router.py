@@ -18,10 +18,10 @@ from src.models.helpers.handle_scenario import HandleScenario
 router = APIRouter()
 
 def get_mock_response(
-    project_id: int | None,
     path: str,
     request: Request,
-    service: EndpointService
+    service: EndpointService,
+    project_id: int | None = None,
 ) -> JSONResponse:
     """Global template
 
@@ -78,7 +78,33 @@ def get_mock_response(
 
 @router.api_route(
     '/mock/{project_id}/{path:path}',
-    methods=[method.value for method in HttpMethods],
+    methods=[HttpMethods.OPTIONS.value],
+    operation_id='process_project_mock_options',
+)
+@router.api_route(
+    '/mock/{project_id}/{path:path}',
+    methods=[HttpMethods.PATCH.value],
+    operation_id='process_project_mock_patch',
+)
+@router.api_route(
+    '/mock/{project_id}/{path:path}',
+    methods=[HttpMethods.PUT.value],
+    operation_id='process_project_mock_put',
+)
+@router.api_route(
+    '/mock/{project_id}/{path:path}',
+    methods=[HttpMethods.DELETE.value],
+    operation_id='process_project_mock_delete',
+)
+@router.api_route(
+    '/mock/{project_id}/{path:path}',
+    methods=[HttpMethods.POST.value],
+    operation_id='process_project_mock_post',
+)
+@router.api_route(
+    '/mock/{project_id}/{path:path}',
+    methods=[HttpMethods.GET.value],
+    operation_id='process_project_mock_get',
 )
 def process_project_mock(
     project_id: int,
@@ -90,15 +116,41 @@ def process_project_mock(
         Implements get_mock_response template
     """
     return get_mock_response(
-        project_id,
-        path,
-        request,
-        service
+        project_id=project_id,
+        path=path,
+        request=request,
+        service=service,
     )
 
 @router.api_route(
     '/mock/{path:path}',
-    methods=[method.value for method in HttpMethods],
+    methods=[HttpMethods.OPTIONS.value],
+    operation_id='process_global_mock_options',
+)
+@router.api_route(
+    '/mock/{path:path}',
+    methods=[HttpMethods.PATCH.value],
+    operation_id='process_global_mock_patch',
+)
+@router.api_route(
+    '/mock/{path:path}',
+    methods=[HttpMethods.PUT.value],
+    operation_id='process_global_mock_put',
+)
+@router.api_route(
+    '/mock/{path:path}',
+    methods=[HttpMethods.DELETE.value],
+    operation_id='process_global_mock_delete',
+)
+@router.api_route(
+    '/mock/{path:path}',
+    methods=[HttpMethods.POST.value],
+    operation_id='process_global_mock_post',
+)
+@router.api_route(
+    '/mock/{path:path}',
+    methods=[HttpMethods.GET.value],
+    operation_id='process_global_mock_get',
 )
 def process_global_mock(
     path: str,
