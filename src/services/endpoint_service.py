@@ -1,5 +1,7 @@
 # Repositories
 from src.repositories.endpoint_repository import EndpointRepository
+# Services
+from src.services.project_service import ProjectService
 # Schemas
 from src.schemas.endpoint_schema import (
     EndpointCreate, 
@@ -22,9 +24,15 @@ from src.models.helpers.handle_scenario import HandleScenario
 
 
 class EndpointService:
-    def __init__(self, session: Session, endpoint_repo: EndpointRepository):
+    def __init__(
+            self, 
+            session: Session, 
+            endpoint_repo: EndpointRepository,
+            project_service: ProjectService,
+    ):
         self.session = session
         self.endpoint_repo = endpoint_repo
+        self.project_service = project_service
 
     # Get concrete endpoint by it's ID
     def get_endpoint_by_id(self, id: int) -> Endpoint:
@@ -191,3 +199,141 @@ class EndpointService:
         self.endpoint_repo.delete(endpoint)
 
         self.session.commit()
+
+    # Transform global endpoint to project
+    def move_endpoint_to(
+            self,
+            endpoint_id: int,
+            target_project_id: int | None = None,
+    ) -> Endpoint:
+        """Move concrete Endpoint object by it's ID to another (global, another project) scope.
+
+        Searching for Endpoint object by given ID 
+        And tries to create new record with the same parameters in global scope
+        
+        If succeeded commits new data
+        Else tries to reactivate inactive Endpoint object with the same parameters
+            If succeeded commits changes
+            Else raises exception 
+
+        Parameters:
+        endpoint_id (int): Promoting Endpoint's object ID
+    
+        Returns:
+        Endpoint: Promoted Endpoint object
+        """
+        # Endpoint object to transfer
+        endpoint = self.get_endpoint_by_id(endpoint_id)
+
+        if target_project_id is not None:
+            self.project_service.get_project_by_id(id=target_project_id)
+            endpoint.project_id = target_project_id
+        endpoint.project_id = target_project_id
+        
+        # Check if endpoint with this combination of parameters already exists in global scope
+        try:
+            self.session.commit()
+            self.session.refresh(endpoint)
+
+            return endpoint
+        
+        except IntegrityError:
+            self.session.rollback()
+
+            # Conflict Endpoint object with given parameters combination
+            conflict_endpoint = self.get_endpoint_by_params(
+                project_id=target_project_id,
+                method=endpoint.method,
+                path=endpoint.path,
+                scenario=endpoint.scenario
+            )
+
+            # Check if conflict Endpoint's record is inactive
+            if conflict_endpoint and not conflict_endpoint.is_active:
+                # Reactivate already existing endpoint
+                conflict_endpoint.is_active = True
+
+                #self.endpoint_repo.delete(endpoint)
+                self.session.commit()
+
+                return conflict_endpoint
+            else:
+                # If already active Endpoint record with given combination of parameters exists raises exception
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Active endpoint with this combination of parameters already exists in this project"
+                )
+
+    # Transform global endpoint to project
+    def clone_endpoint_to(
+            self,
+            endpoint_id: int,
+            target_project_id: int | None = None,
+    ) -> Endpoint:
+        """Clone concrete Endpoint object by it's ID to global or another project scope.
+
+        Searching for Endpoint object by given ID 
+        And tries to move this record into target scope (targer_project_id)
+        
+        If succeeded commits new data
+        Else tries to reactivate inactive Endpoint object with the same parameters
+            If succeeded commits changes
+            Else raises exception 
+
+        Parameters:
+        endpoint_id (int): Promoting Endpoint's object ID
+    
+        Returns:
+        Endpoint: Promoted Endpoint object
+        """
+        # Endpoint object to transfer
+        endpoint = self.get_endpoint_by_id(endpoint_id)
+
+        # Endpoint object to clone
+        clone_record = EndpointCreate(
+            project_id=target_project_id,
+            method=endpoint.method,
+            path=endpoint.path,
+            status_code=endpoint.status_code,
+            response_headers=endpoint.response_headers,
+            response_body=endpoint.response_body,
+            scenario=endpoint.scenario,
+        )
+
+        if target_project_id is not None:
+            self.project_service.get_project_by_id(id=target_project_id)
+            self.create_endpoint(clone_record)
+        self.create_endpoint(clone_record)
+        
+        # Check if endpoint with this combination of parameters already exists in global scope
+        try:
+            self.session.commit()
+            self.session.refresh(endpoint)
+
+            return clone_record
+        
+        except IntegrityError:
+            self.session.rollback()
+
+            # Conflict Endpoint object with given parameters combination
+            conflict_endpoint = self.get_endpoint_by_params(
+                project_id=target_project_id,
+                method=endpoint.method,
+                path=endpoint.path,
+                scenario=endpoint.scenario
+            )
+
+            # Check if conflict Endpoint's record is inactive
+            if conflict_endpoint and not conflict_endpoint.is_active:
+                # Reactivate already existing endpoint
+                conflict_endpoint.is_active = True
+
+                self.session.commit()
+
+                return conflict_endpoint
+            else:
+                # If already active Endpoint record with given combination of parameters exists raises exception
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Active endpoint with this combination of parameters already exists in this project"
+                )

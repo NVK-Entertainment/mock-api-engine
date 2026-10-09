@@ -13,8 +13,11 @@ from sqlalchemy import (
     )
 # HTTP-methods storage class
 from src.models.helpers.time_stamps import TimeStampMixin
+# Typing
+from typing import TYPE_CHECKING
 # Models
-from src.models.endpoint import Endpoint
+if TYPE_CHECKING:
+    from src.models.endpoint import Endpoint
 
 
 # Project object ORM model
@@ -35,9 +38,7 @@ class Project(TimeStampMixin, Base):
     )
 
     # List of api handles that contains in the project
-    handles: Mapped[list['Endpoint']]= relationship()
-    
-    # ========== TEMPORALY FROZEN =========
-    #members: Mapped[list['User']] = relationship(
-    #    back_populates='projects'
-    #)
+    handles: Mapped[list['Endpoint']]= relationship(
+        back_populates="project",
+        cascade='all, delete-orphan',
+        )

@@ -23,10 +23,12 @@ def get_endpoint_service(session: Annotated[Session, Depends(get_session)]) -> E
     """
     # Endpoint repo instance
     endpoint_repo = EndpointRepository(session)
+    project_service = get_project_service(session)
     
     return EndpointService(
         session=session,
         endpoint_repo=endpoint_repo,
+        project_service=project_service
     )
 
 def get_project_service(session: Annotated[Session, Depends(get_session)]) -> ProjectService:

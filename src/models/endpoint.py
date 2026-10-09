@@ -4,6 +4,7 @@ from src.database.db import Base
 from sqlalchemy.orm import (
     Mapped, 
     mapped_column,
+    relationship,
     )
 # Typing dependencies
 from sqlalchemy import (
@@ -11,16 +12,23 @@ from sqlalchemy import (
     String,
     Enum,
     Boolean,
-    UniqueConstraint,
+    Index,
+    text,
     CheckConstraint,
     ForeignKey,
     )
 from sqlalchemy.dialects.postgresql import JSONB
-from typing import Any
+from typing import (
+    Any,
+    TYPE_CHECKING
+    )
 # HTTP-methods storage class
 from src.models.helpers.methods import HttpMethods
 from src.models.helpers.time_stamps import TimeStampMixin
 from src.models.helpers.handle_scenario import HandleScenario
+# Models
+if TYPE_CHECKING:
+    from src.models.project import Project
 
 
 # Endpoints table
@@ -77,19 +85,34 @@ class Endpoint(TimeStampMixin, Base):
         index=True,
     )
 
+    # Handle's project link (delete handles on project's deletion)
+    project: Mapped['Project'] = relationship(
+        back_populates='handles'
+    )
+
     # Table constraints
     __table_args__ = (
-        # Table fields limiter
+        # status_code field limiter (validation)
         CheckConstraint(
             "status_code >= 100 AND status_code <= 599",
             name="check_status_code_range"
         ),
-        # Sequence of unique fileds in one row
-        UniqueConstraint(
-            'project_id', 
-            'method', 
-            'scenario', 
-            'path',
-            name='uq_endpoint_project_method_scenario_path'
-        )
+        # Partial indexes (uniqueness)
+        Index(
+            "uq_project_endpoint_route",
+            "project_id",
+            "method",
+            "scenario",
+            "path",
+            unique=True,
+            postgresql_where=text("project_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_global_endpoint_route",
+            "method",
+            "scenario",
+            "path",
+            unique=True,
+            postgresql_where=text("project_id IS NULL"),
+        ),
     )
