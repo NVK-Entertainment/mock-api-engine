@@ -227,7 +227,8 @@ class EndpointService:
 
         if target_project_id is not None:
             self.project_service.get_project_by_id(id=target_project_id)
-            endpoint.project_id = target_project_id
+
+        # Change concrete endpoint's project_id parameter
         endpoint.project_id = target_project_id
         
         # Check if endpoint with this combination of parameters already exists in global scope
@@ -255,6 +256,7 @@ class EndpointService:
 
                 #self.endpoint_repo.delete(endpoint)
                 self.session.commit()
+                self.session.refresh(conflict_endpoint)
 
                 return conflict_endpoint
             else:
@@ -289,8 +291,11 @@ class EndpointService:
         # Endpoint object to transfer
         endpoint = self.get_endpoint_by_id(endpoint_id)
 
+        if target_project_id is not None:
+            self.project_service.get_project_by_id(id=target_project_id)
+
         # Endpoint object to clone
-        clone_record = EndpointCreate(
+        clone_data = EndpointCreate(
             project_id=target_project_id,
             method=endpoint.method,
             path=endpoint.path,
@@ -300,17 +305,13 @@ class EndpointService:
             scenario=endpoint.scenario,
         )
 
-        if target_project_id is not None:
-            self.project_service.get_project_by_id(id=target_project_id)
-            self.create_endpoint(clone_record)
-        self.create_endpoint(clone_record)
-        
         # Check if endpoint with this combination of parameters already exists in global scope
         try:
+            cloned_endpoint = self.create_endpoint(clone_data)
             self.session.commit()
-            self.session.refresh(endpoint)
+            self.session.refresh(cloned_endpoint)
 
-            return clone_record
+            return cloned_endpoint
         
         except IntegrityError:
             self.session.rollback()
@@ -329,6 +330,7 @@ class EndpointService:
                 conflict_endpoint.is_active = True
 
                 self.session.commit()
+                self.session.refresh(conflict_endpoint)
 
                 return conflict_endpoint
             else:

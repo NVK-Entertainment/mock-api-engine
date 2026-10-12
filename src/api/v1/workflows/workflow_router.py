@@ -10,21 +10,18 @@ from src.core.factories import get_endpoint_service
 # Schemas
 from src.schemas.endpoint_schema import (
     EndpointResponse,
-    EndpointCreate,
-    EndpointUpdate,
 )
 # Annotation
 from typing import Annotated
 
 
 # Api router object
-router = APIRouter()
+router = APIRouter(prefix='/api/v1')
 
 
-# Promote endpoint to global scope
 @router.post(
-    '/projects/{project_id}/endpoints/{endpoint_id}/promote-to-global',
-    status_code=status.HTTP_201_CREATED,
+    '/projects/{project_id}/endpoints/{endpoint_id}/move-to',
+    status_code=status.HTTP_200_OK,
 )
 def move_endpoint(
     project_id: int,
@@ -50,7 +47,7 @@ def move_endpoint(
 
 # Override endpoint from global to project scope
 @router.post(
-    '/endpoints/{endpoint_id}/projects/{project_id}',
+    '/endpoints/{endpoint_id}/projects/{project_id}/clone-to',
     status_code=status.HTTP_201_CREATED,
 )
 def clone_endpoint(

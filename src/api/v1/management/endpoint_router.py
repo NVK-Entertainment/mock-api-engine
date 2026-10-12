@@ -18,11 +18,11 @@ from typing import Annotated
 
 
 # Api router object
-router = APIRouter()
+router = APIRouter(prefix='/api/v1/management/endpoints')
 
 
 @router.get(
-    '/endpoints', 
+    '', 
     response_model=list[EndpointResponse], 
     status_code=status.HTTP_200_OK,
 )
@@ -43,7 +43,7 @@ def get_endpoints(
 
 
 @router.get(
-    '/endpoints/{endpoint_id}', 
+    '/{endpoint_id}', 
     response_model=EndpointResponse, 
     status_code=status.HTTP_200_OK,
 )
@@ -65,7 +65,7 @@ def get_endpoint(
 
 
 @router.post(
-    '/endpoints', 
+    '', 
     response_model=EndpointResponse, 
     status_code=status.HTTP_201_CREATED,
 )
@@ -87,7 +87,7 @@ def create_endpoint(
 
 
 @router.patch(
-    '/endpoints/{endpoint_id}',
+    '/{endpoint_id}',
     response_model=EndpointResponse,
     status_code=status.HTTP_200_OK,
 )
@@ -112,7 +112,7 @@ def update_endpoint_partially(
 
 ''' (Temporaly frozen till it's really needed)
 @router.put(
-    '/endpoints/{endpoint_id}',
+    '/{endpoint_id}',
     response_model=EndpointResponse,
     status_code=status.HTTP_200_OK,
 )
@@ -138,7 +138,7 @@ def update_endpoint_fully(
 
 
 @router.delete(
-    '/endpoints/{endpoint_id}',
+    '/{endpoint_id}',
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_endpoint(
@@ -156,4 +156,3 @@ def delete_endpoint(
     None
     """
     service.delete_endpoint(endpoint_id)
-

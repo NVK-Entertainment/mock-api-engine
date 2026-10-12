@@ -18,11 +18,11 @@ from typing import Annotated
 
 
 # Api router object
-router = APIRouter()
+router = APIRouter(prefix='/api/v1/projects')
 
 
 @router.get(
-    '/projects', 
+    '', 
     response_model=list[ProjectResponse], 
     status_code=status.HTTP_200_OK,
 )
@@ -43,7 +43,7 @@ def get_projects(
 
 
 @router.get(
-    '/projects/{project_id}', 
+    '/{project_id}', 
     response_model=ProjectResponse, 
     status_code=status.HTTP_200_OK,
 )
@@ -65,7 +65,7 @@ def get_project(
 
 
 @router.post(
-    '/projects', 
+    '', 
     response_model=ProjectResponse, 
     status_code=status.HTTP_201_CREATED,
 )
@@ -87,7 +87,7 @@ def create_project(
 
 
 @router.patch(
-    '/projects/{project_id}',
+    '/{project_id}',
     response_model=ProjectResponse,
     status_code=status.HTTP_200_OK,
 )
@@ -110,7 +110,7 @@ def update_project_partially(
     return service.update_project(project_id, project_data)
 
 @router.delete(
-    '/projects/{project_id}',
+    '/{project_id}',
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_project(

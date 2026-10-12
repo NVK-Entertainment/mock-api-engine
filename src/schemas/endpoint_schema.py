@@ -3,12 +3,14 @@ from pydantic import (
     BaseModel, 
     JsonValue,
     Field,
-    ConfigDict
+    ConfigDict,
+    field_validator
 )
 from datetime import datetime
 # Helper classes
 from src.models.helpers.handle_scenario import HandleScenario
 from src.models.helpers.methods import HttpMethods
+from src.core.utils import normalize_path
 
 
 # GET schema
@@ -54,6 +56,12 @@ class EndpointCreate(BaseModel):
     # Current endpoint status
     is_active: bool = True
 
+    # Path field validator (call normalize_path utils function to normalize endpoint's path parameter)
+    @field_validator('path', mode='before')
+    @classmethod
+    def _normalize_path(cls, path:str) -> str:
+        return normalize_path(path)
+
 # PUT/PATCH schema
 class EndpointUpdate(BaseModel):
     # Endpoint's project (if exists)
@@ -71,3 +79,9 @@ class EndpointUpdate(BaseModel):
     scenario: HandleScenario | None = None
     # Current endpoint status
     is_active: bool | None = None
+
+    # Path field validator (call normalize_path utils function to normalize endpoint's path parameter)
+    @field_validator('path', mode='before')
+    @classmethod
+    def _normalize_path(cls, path:str) -> str:
+        return normalize_path(path)
