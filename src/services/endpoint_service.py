@@ -60,10 +60,11 @@ class EndpointService:
     # Get concrete endpoint by it's project_id, method, path, scenario
     def get_endpoint_by_params(
             self,
-            project_id: int | None,
             method: HttpMethods,
             path: str,
-            scenario: HandleScenario
+            scenario: HandleScenario,
+            project_id: int | None = None,
+            only_active: bool = True,
     ) -> Endpoint:
         """Returns Endpoint object with by given set of parameters
 
@@ -84,6 +85,7 @@ class EndpointService:
             method=method,
             path=path,
             scenario=scenario,
+            only_active=only_active,
         )
 
         # Existance check
@@ -246,13 +248,15 @@ class EndpointService:
                 project_id=target_project_id,
                 method=endpoint.method,
                 path=endpoint.path,
-                scenario=endpoint.scenario
+                scenario=endpoint.scenario,
+                only_active=False,
             )
 
             # Check if conflict Endpoint's record is inactive
             if conflict_endpoint and not conflict_endpoint.is_active:
                 # Reactivate already existing endpoint
                 conflict_endpoint.is_active = True
+                self.delete_endpoint(endpoint.id)
 
                 #self.endpoint_repo.delete(endpoint)
                 self.session.commit()

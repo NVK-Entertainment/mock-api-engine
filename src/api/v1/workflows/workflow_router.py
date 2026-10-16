@@ -24,9 +24,9 @@ router = APIRouter(prefix='/api/v1')
     status_code=status.HTTP_200_OK,
 )
 def move_endpoint(
-    project_id: int,
     endpoint_id: int,
-    service: Annotated[EndpointService, Depends(get_endpoint_service)]
+    service: Annotated[EndpointService, Depends(get_endpoint_service)],
+    project_id: int | None = None
 ) -> EndpointResponse:
     """Move concrete Endpoint object by it's ID to global or another project scope.
 
@@ -52,8 +52,8 @@ def move_endpoint(
 )
 def clone_endpoint(
     endpoint_id: int,
-    project_id: int,
-    service: Annotated[EndpointService, Depends(get_endpoint_service)]
+    service: Annotated[EndpointService, Depends(get_endpoint_service)],
+    project_id: int | None = None,
 ) -> EndpointResponse:
     """Clone concrete Endpoint object by it's ID to global or another project scope.
 

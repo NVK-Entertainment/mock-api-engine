@@ -6,7 +6,7 @@ from src.database.db import engine
 # API routers
 from src.api.v1.management.endpoint_router import router as endpoint_router
 from src.api.v1.management.project_router import router as project_router
-from src.api.v1.management.mock_router import router as mock_router
+from src.api.v1.runtime.mock_router import router as mock_router
 from src.api.v1.workflows.workflow_router import router as workflow_router
 # Models
 import src.models

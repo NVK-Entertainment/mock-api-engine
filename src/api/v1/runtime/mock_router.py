@@ -45,6 +45,8 @@ def get_mock_response(
     Returns:
     JSONResponse: Endpoint's JSON HTTP-response
     """
+    # Normalize path
+    complete_path = normalize_path(path)
     # Request method
     method = HttpMethods(request.method)
     # Request scenario
@@ -64,7 +66,7 @@ def get_mock_response(
     endpoint = service.get_endpoint_by_params(
         project_id=project_id,
         method=method,
-        path=path,
+        path=complete_path,
         scenario=scenario
     )
     # Mock handle response

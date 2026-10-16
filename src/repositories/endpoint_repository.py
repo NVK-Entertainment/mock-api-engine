@@ -28,10 +28,11 @@ class EndpointRepository:
     # Get concrete endpoint by it's path
     def get_by_route(
             self,
-            project_id: int | None,
             method: HttpMethods,
             path: str,
             scenario: HandleScenario,
+            only_active: bool = True,
+            project_id: int | None = None,
             ) -> Endpoint:
         # SQL statement
         stmt = (
@@ -41,9 +42,10 @@ class EndpointRepository:
                 Endpoint.method == method,
                 Endpoint.path == path,
                 Endpoint.scenario == scenario,
-                Endpoint.is_active.is_(True),
                 )
         )
+        if only_active:
+            stmt = stmt.where(Endpoint.is_active.is_(True))
         result = self.session.execute(stmt)
 
         # Endpoint object
