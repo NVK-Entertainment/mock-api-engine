@@ -1,13 +1,15 @@
 # SQL dependencies
-from sqlalchemy import create_engine
-from sqlalchemy.orm import (
-    sessionmaker, 
-    Session
+from sqlalchemy.ext.asyncio import (
+    async_sessionmaker, 
+    AsyncSession,
+    create_async_engine
     )
 # SQL metadata dependencies
 from sqlalchemy.orm import DeclarativeBase
 # Settings configuration
-from src.core.settings import settings
+from src.core.config import settings
+# Annotation
+from typing import AsyncGenerator
 
 
 # Database connection URL
@@ -17,13 +19,14 @@ DB_URL = (
 )
 
 # Database connection engine
-engine = create_engine(
+engine = create_async_engine(
     url=DB_URL,
     pool_pre_ping=True,
     )
 
-session_local = sessionmaker(
+AsyncSessionLocal = async_sessionmaker(
     bind=engine,
+    class_=AsyncSession,
     expire_on_commit=False
     )
 
@@ -32,6 +35,6 @@ class Base(DeclarativeBase):
     pass
 
 # Database session generator
-def get_session():
-    with session_local() as session:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
         yield session

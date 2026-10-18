@@ -8,7 +8,7 @@ from src.schemas.endpoint_schema import (
     EndpointUpdate
     )
 # Typing
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import (
     HTTPException, 
     status
@@ -26,7 +26,7 @@ from src.models.helpers.handle_scenario import HandleScenario
 class EndpointService:
     def __init__(
             self, 
-            session: Session, 
+            session: AsyncSession, 
             endpoint_repo: EndpointRepository,
             project_service: ProjectService,
     ):
@@ -35,7 +35,7 @@ class EndpointService:
         self.project_service = project_service
 
     # Get concrete endpoint by it's ID
-    def get_endpoint_by_id(self, id: int) -> Endpoint:
+    async def get_endpoint_by_id(self, id: int) -> Endpoint:
         """Returns concrete Endpoint object by it's ID.
 
         Get concrete Endpoint object by given ID
@@ -47,7 +47,7 @@ class EndpointService:
         Endpoint: Found by ID Endpoint object
         """
         # Endpoint object
-        endpoint = self.endpoint_repo.get_by_id(id)
+        endpoint = await self.endpoint_repo.get_by_id(id)
         # Existance check
         if not endpoint:
             raise HTTPException(
@@ -58,7 +58,7 @@ class EndpointService:
         return endpoint
 
     # Get concrete endpoint by it's project_id, method, path, scenario
-    def get_endpoint_by_params(
+    async def get_endpoint_by_params(
             self,
             method: HttpMethods,
             path: str,
@@ -80,7 +80,7 @@ class EndpointService:
         Returns:
         Endpoint: Endpoint object
         """
-        endpoint = self.endpoint_repo.get_by_route(
+        endpoint = await self.endpoint_repo.get_by_route(
             project_id=project_id,
             method=method,
             path=path,
@@ -97,7 +97,7 @@ class EndpointService:
         return endpoint
 
     # Get all endpoint (for future(maybe))
-    def get_all_endpoints(self) -> list[Endpoint]:
+    async def get_all_endpoints(self) -> list[Endpoint]:
         """Returns list of all Endpoints objects in database.
 
         Get all Endpoint objects in database
@@ -106,7 +106,7 @@ class EndpointService:
         list[Endpoint]: Endpoint objects
         """
         # List of Endpoint objects
-        endpoints = self.endpoint_repo.get_all()
+        endpoints = await self.endpoint_repo.get_all()
 
         # Existance check
         if not endpoints:
@@ -115,7 +115,7 @@ class EndpointService:
         return endpoints
 
     # Create new endpoint
-    def create_endpoint(
+    async def create_endpoint(
         self,
         endpoint_data: EndpointCreate,
     ) -> Endpoint:
@@ -129,16 +129,16 @@ class EndpointService:
         """
         try:
             # New endpoint object
-            new_endpoint =  self.endpoint_repo.create(endpoint_data)
+            new_endpoint = await self.endpoint_repo.create(endpoint_data)
 
             # Session commit and refresh new endpoint's data
-            self.session.commit()
-            self.session.refresh(new_endpoint)
+            await self.session.commit()
+            await self.session.refresh(new_endpoint)
 
             return new_endpoint
         except IntegrityError:
             # Rolling back failed transaction
-            self.session.rollback()
+            await self.session.rollback()
 
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -146,7 +146,7 @@ class EndpointService:
             )
 
     # Update concrete endpoint
-    def update_endpoint(
+    async def update_endpoint(
         self,
         id: int,
         new_data: EndpointUpdate,
@@ -165,20 +165,20 @@ class EndpointService:
         """
         try:
             # Endpoint object to change
-            endpoint = self.get_endpoint_by_id(id)
-            changed_endpoint = self.endpoint_repo.update(
+            endpoint = await self.get_endpoint_by_id(id)
+            changed_endpoint = await self.endpoint_repo.update(
                 id=endpoint.id, 
                 endpoint_data=new_data
             )
 
             # Session commit and refresh changed endpoint's data
-            self.session.commit()
-            self.session.refresh(changed_endpoint)
+            await self.session.commit()
+            await self.session.refresh(changed_endpoint)
 
             return changed_endpoint
         except IntegrityError:
             # Rolling back failed session transaction
-            self.session.rollback()
+            await self.session.rollback()
 
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -186,7 +186,7 @@ class EndpointService:
             )
 
     # Delete concrete endpoint by it's id
-    def delete_endpoint(self, id: int) -> None:
+    async def delete_endpoint(self, id: int) -> None:
         """Delete concrete Endpoint object by it's ID.
 
         Parameters:
@@ -197,13 +197,13 @@ class EndpointService:
         """
 
         # Endpoint object to delete
-        endpoint = self.get_endpoint_by_id(id)
-        self.endpoint_repo.delete(endpoint)
+        endpoint = await self.get_endpoint_by_id(id)
+        await self.endpoint_repo.delete(endpoint)
 
-        self.session.commit()
+        await self.session.commit()
 
     # Transform global endpoint to project
-    def move_endpoint_to(
+    async def move_endpoint_to(
             self,
             endpoint_id: int,
             target_project_id: int | None = None,
@@ -225,26 +225,28 @@ class EndpointService:
         Endpoint: Promoted Endpoint object
         """
         # Endpoint object to transfer
-        endpoint = self.get_endpoint_by_id(endpoint_id)
+        endpoint = await self.get_endpoint_by_id(endpoint_id)
 
         if target_project_id is not None:
-            self.project_service.get_project_by_id(id=target_project_id)
+            await self.project_service.get_project_by_id(id=target_project_id)
 
         # Change concrete endpoint's project_id parameter
         endpoint.project_id = target_project_id
         
         # Check if endpoint with this combination of parameters already exists in global scope
         try:
-            self.session.commit()
-            self.session.refresh(endpoint)
+            await self.session.commit()
+            await self.session.refresh(endpoint)
 
             return endpoint
         
         except IntegrityError:
-            self.session.rollback()
+            await self.session.rollback()
+
+            endpoint = await self.get_endpoint_by_id(endpoint_id)
 
             # Conflict Endpoint object with given parameters combination
-            conflict_endpoint = self.get_endpoint_by_params(
+            conflict_endpoint = await self.get_endpoint_by_params(
                 project_id=target_project_id,
                 method=endpoint.method,
                 path=endpoint.path,
@@ -256,11 +258,11 @@ class EndpointService:
             if conflict_endpoint and not conflict_endpoint.is_active:
                 # Reactivate already existing endpoint
                 conflict_endpoint.is_active = True
-                self.delete_endpoint(endpoint.id)
+                await self.endpoint_repo.delete(endpoint)
 
                 #self.endpoint_repo.delete(endpoint)
-                self.session.commit()
-                self.session.refresh(conflict_endpoint)
+                await self.session.commit()
+                await self.session.refresh(conflict_endpoint)
 
                 return conflict_endpoint
             else:
@@ -271,7 +273,7 @@ class EndpointService:
                 )
 
     # Transform global endpoint to project
-    def clone_endpoint_to(
+    async def clone_endpoint_to(
             self,
             endpoint_id: int,
             target_project_id: int | None = None,
@@ -293,10 +295,10 @@ class EndpointService:
         Endpoint: Promoted Endpoint object
         """
         # Endpoint object to transfer
-        endpoint = self.get_endpoint_by_id(endpoint_id)
+        endpoint = await self.get_endpoint_by_id(endpoint_id)
 
         if target_project_id is not None:
-            self.project_service.get_project_by_id(id=target_project_id)
+            await self.project_service.get_project_by_id(id=target_project_id)
 
         # Endpoint object to clone
         clone_data = EndpointCreate(
@@ -311,17 +313,19 @@ class EndpointService:
 
         # Check if endpoint with this combination of parameters already exists in global scope
         try:
-            cloned_endpoint = self.create_endpoint(clone_data)
-            self.session.commit()
-            self.session.refresh(cloned_endpoint)
+            cloned_endpoint = await self.create_endpoint(clone_data)
+            await self.session.commit()
+            await self.session.refresh(cloned_endpoint)
 
             return cloned_endpoint
         
         except IntegrityError:
-            self.session.rollback()
+            await self.session.rollback()
+
+            endpoint = await self.get_endpoint_by_id(endpoint_id)
 
             # Conflict Endpoint object with given parameters combination
-            conflict_endpoint = self.get_endpoint_by_params(
+            conflict_endpoint = await self.get_endpoint_by_params(
                 project_id=target_project_id,
                 method=endpoint.method,
                 path=endpoint.path,
@@ -333,8 +337,8 @@ class EndpointService:
                 # Reactivate already existing endpoint
                 conflict_endpoint.is_active = True
 
-                self.session.commit()
-                self.session.refresh(conflict_endpoint)
+                await self.session.commit()
+                await self.session.refresh(conflict_endpoint)
 
                 return conflict_endpoint
             else:

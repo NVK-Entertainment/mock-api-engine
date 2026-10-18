@@ -26,7 +26,7 @@ router = APIRouter(prefix='/api/v1/projects')
     response_model=list[ProjectResponse], 
     status_code=status.HTTP_200_OK,
 )
-def get_projects(
+async def get_projects(
     service: Annotated[ProjectService, Depends(get_project_service)],
 ) -> list[ProjectResponse]:
     """Get all projects API handle.
@@ -39,7 +39,7 @@ def get_projects(
     Returns:
     list[ProjectResponse]: List of project objects
     """
-    return service.get_all_projects()
+    return await service.get_all_projects()
 
 
 @router.get(
@@ -47,7 +47,7 @@ def get_projects(
     response_model=ProjectResponse, 
     status_code=status.HTTP_200_OK,
 )
-def get_project(
+async def get_project(
     project_id: int,
     service: Annotated[ProjectService, Depends(get_project_service)],
 ) -> ProjectResponse:
@@ -61,7 +61,7 @@ def get_project(
     Returns:
     ProjectResponse: Concrete Project object by its ID
     """
-    return service.get_project_by_id(project_id)
+    return await service.get_project_by_id(project_id)
 
 
 @router.post(
@@ -69,7 +69,7 @@ def get_project(
     response_model=ProjectResponse, 
     status_code=status.HTTP_201_CREATED,
 )
-def create_project(
+async def create_project(
     project_data: ProjectCreate,
     service: Annotated[ProjectService, Depends(get_project_service)],
 ) -> ProjectResponse:
@@ -83,7 +83,7 @@ def create_project(
     Returns:
     ProjectResponse: Created Project object
     """
-    return service.create_project(project_data)
+    return await service.create_project(project_data)
 
 
 @router.patch(
@@ -91,7 +91,7 @@ def create_project(
     response_model=ProjectResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_project_partially(
+async def update_project_partially(
     project_id: int,
     project_data: ProjectUpdate,
     service: Annotated[ProjectService, Depends(get_project_service)],
@@ -107,13 +107,13 @@ def update_project_partially(
     Returns:
     ProjectResponse: Partially updated Project object
     """
-    return service.update_project(project_id, project_data)
+    return await service.update_project(project_id, project_data)
 
 @router.delete(
     '/{project_id}',
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_project(
+async def delete_project(
     project_id: int,
     service: Annotated[ProjectService, Depends(get_project_service)],
 ) -> None:
@@ -127,4 +127,4 @@ def delete_project(
     Returns:
     None
     """
-    service.delete_project(project_id)
+    await service.delete_project(project_id)
