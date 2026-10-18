@@ -20,10 +20,10 @@ router = APIRouter(prefix='/api/v1')
 
 
 @router.post(
-    '/projects/{project_id}/endpoints/{endpoint_id}/move-to',
+    '/endpoints/{endpoint_id}/move-to/projects/{project_id}',
     status_code=status.HTTP_200_OK,
 )
-def move_endpoint(
+async def move_endpoint(
     endpoint_id: int,
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
     project_id: int | None = None
@@ -40,17 +40,17 @@ def move_endpoint(
     Returns:
     Endpoint: Moved Endpoint object
     """
-    return service.move_endpoint_to(
+    return await service.move_endpoint_to(
         endpoint_id, 
         project_id
     )
 
 # Override endpoint from global to project scope
 @router.post(
-    '/endpoints/{endpoint_id}/projects/{project_id}/clone-to',
+    '/endpoints/{endpoint_id}/clone-to/projects/{project_id}',
     status_code=status.HTTP_201_CREATED,
 )
-def clone_endpoint(
+async def clone_endpoint(
     endpoint_id: int,
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
     project_id: int | None = None,
@@ -67,7 +67,7 @@ def clone_endpoint(
     Returns:
     Endpoint: Cloned Endpoint object
     """
-    return service.clone_endpoint_to(
+    return await service.clone_endpoint_to(
         endpoint_id, 
         project_id
     )

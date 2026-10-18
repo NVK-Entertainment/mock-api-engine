@@ -26,7 +26,7 @@ router = APIRouter(prefix='/api/v1/management/endpoints')
     response_model=list[EndpointResponse], 
     status_code=status.HTTP_200_OK,
 )
-def get_endpoints(
+async def get_endpoints(
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
 ) -> list[EndpointResponse]:
     """Get all endpoint API handle.
@@ -39,7 +39,7 @@ def get_endpoints(
     Returns:
     list[EndpointResponse]: List of endpoint objects
     """
-    return service.get_all_endpoints()
+    return await service.get_all_endpoints()
 
 
 @router.get(
@@ -47,7 +47,7 @@ def get_endpoints(
     response_model=EndpointResponse, 
     status_code=status.HTTP_200_OK,
 )
-def get_endpoint(
+async def get_endpoint(
     endpoint_id: int,
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
 ) -> EndpointResponse:
@@ -61,7 +61,7 @@ def get_endpoint(
     Returns:
     EndpointResponse: Concrete Endpoint object by its ID
     """
-    return service.get_endpoint_by_id(endpoint_id)
+    return await service.get_endpoint_by_id(endpoint_id)
 
 
 @router.post(
@@ -69,7 +69,7 @@ def get_endpoint(
     response_model=EndpointResponse, 
     status_code=status.HTTP_201_CREATED,
 )
-def create_endpoint(
+async def create_endpoint(
     endpoint_data: EndpointCreate,
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
 ) -> EndpointResponse:
@@ -83,7 +83,7 @@ def create_endpoint(
     Returns:
     EndpointResponse: Created Endpoint object
     """
-    return service.create_endpoint(endpoint_data)
+    return await service.create_endpoint(endpoint_data)
 
 
 @router.patch(
@@ -91,7 +91,7 @@ def create_endpoint(
     response_model=EndpointResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_endpoint_partially(
+async def update_endpoint_partially(
     endpoint_id: int,
     endpoint_data: EndpointUpdate,
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
@@ -107,7 +107,7 @@ def update_endpoint_partially(
     Returns:
     EndpointResponse: Partially updated Endpoint object
     """
-    return service.update_endpoint(endpoint_id, endpoint_data)
+    return await service.update_endpoint(endpoint_id, endpoint_data)
 
 
 ''' (Temporaly frozen till it's really needed)
@@ -141,7 +141,7 @@ def update_endpoint_fully(
     '/{endpoint_id}',
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_endpoint(
+async def delete_endpoint(
     endpoint_id: int,
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
 ) -> None:
@@ -155,4 +155,4 @@ def delete_endpoint(
     Returns:
     None
     """
-    service.delete_endpoint(endpoint_id)
+    await service.delete_endpoint(endpoint_id)

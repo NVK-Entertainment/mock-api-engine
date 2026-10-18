@@ -19,7 +19,7 @@ from src.core.utils import normalize_path
 router = APIRouter(prefix='/api/v1/mock')
 
 
-def get_mock_response(
+async def get_mock_response(
     path: str,
     request: Request,
     service: EndpointService,
@@ -63,7 +63,7 @@ def get_mock_response(
 
 
     # Endpoint object by it's parameters
-    endpoint = service.get_endpoint_by_params(
+    endpoint = await service.get_endpoint_by_params(
         project_id=project_id,
         method=method,
         path=complete_path,
@@ -111,7 +111,7 @@ def get_mock_response(
     methods=[HttpMethods.GET.value],
     operation_id='process_project_mock_get',
 )
-def process_project_mock(
+async def process_project_mock(
     project_id: int,
     path: str,
     request: Request,
@@ -120,7 +120,7 @@ def process_project_mock(
     """ Process mocks with project
         Implements get_mock_response template
     """
-    return get_mock_response(
+    return await get_mock_response(
         project_id=project_id,
         path=path,
         request=request,
@@ -162,7 +162,7 @@ def process_project_mock(
     methods=[HttpMethods.GET.value],
     operation_id='process_global_mock_get',
 )
-def process_global_mock(
+async def process_global_mock(
     path: str,
     request: Request,
     service: Annotated[EndpointService, Depends(get_endpoint_service)]
@@ -170,7 +170,7 @@ def process_global_mock(
     """ Process mocks without project
         Implements get_mock_response template
     """
-    return get_mock_response(
+    return await get_mock_response(
         project_id=None,
         path=path,
         request=request,

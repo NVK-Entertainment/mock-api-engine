@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from src.models.endpoint import Endpoint
 from src.schemas.endpoint_schema import EndpointCreate
 from src.models.helpers.methods import HttpMethods
@@ -12,13 +13,14 @@ class EndpointRepository:
         self.session = session
 
     # Get concrete endpoint by it's id
-    def get_by_id(self, id: int) -> Endpoint:
+    async def get_by_id(self, id: int) -> Endpoint:
         # SQL statement
         stmt = (
             select(Endpoint)
+            .options(selectinload(Endpoint.project))
             .where(Endpoint.id == id)
         )
-        result = self.session.execute(stmt)
+        result = await self.session.execute(stmt)
 
         # Endpoint object
         endpoint = result.scalars().one_or_none()
@@ -26,7 +28,7 @@ class EndpointRepository:
         return endpoint
 
     # Get concrete endpoint by it's path
-    def get_by_route(
+    async def get_by_route(
             self,
             method: HttpMethods,
             path: str,
@@ -37,6 +39,7 @@ class EndpointRepository:
         # SQL statement
         stmt = (
             select(Endpoint)
+            .options(selectinload(Endpoint.project))
             .where(
                 Endpoint.project_id == project_id,
                 Endpoint.method == method,
@@ -46,7 +49,7 @@ class EndpointRepository:
         )
         if only_active:
             stmt = stmt.where(Endpoint.is_active.is_(True))
-        result = self.session.execute(stmt)
+        result = await self.session.execute(stmt)
 
         # Endpoint object
         endpoint = result.scalars().first()
@@ -54,12 +57,13 @@ class EndpointRepository:
         return endpoint
 
     # Get all api endpoints (for future (maybe))
-    def get_all(self) -> list[Endpoint]:
+    async def get_all(self) -> list[Endpoint]:
         # SQL statement
         stmt = (
             select(Endpoint)
+            .options(selectinload(Endpoint.project))
         )
-        result = self.session.execute(stmt)
+        result = await self.session.execute(stmt)
 
         # List of Endpoint objects
         endpoints = result.scalars().all()
@@ -67,7 +71,7 @@ class EndpointRepository:
         return endpoints
 
     # Add endpoint to database
-    def create(self, endpoint_data: EndpointCreate) -> Endpoint:
+    async def create(self, endpoint_data: EndpointCreate) -> Endpoint:
         # New endpoint object
         new_endpoint = Endpoint(
             project_id = endpoint_data.project_id,
@@ -86,13 +90,13 @@ class EndpointRepository:
         return new_endpoint
 
     # Update concrete endpoint by it's id
-    def update(
+    async def update(
             self, 
             id: int, 
             endpoint_data: EndpointUpdate
         ) -> Endpoint | None:
         # Endpoint object by it's id
-        endpoint = self.get_by_id(id)
+        endpoint = await self.get_by_id(id)
 
         if endpoint is None:
             return None
@@ -107,5 +111,5 @@ class EndpointRepository:
         return endpoint
 
     # Delete concrete endpoint
-    def delete(self, endpoint: Endpoint) -> None:        
-        self.session.delete(endpoint)
+    async def delete(self, endpoint: Endpoint) -> None:        
+        await self.session.delete(endpoint)

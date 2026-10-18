@@ -6,7 +6,7 @@ from src.schemas.project_schema import (
     ProjectUpdate
     )
 # Typing
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import (
     HTTPException, 
     status
@@ -18,12 +18,12 @@ from sqlalchemy.exc import IntegrityError
 
 
 class ProjectService:
-    def __init__(self, session: Session, project_repo: ProjectRepository):
+    def __init__(self, session: AsyncSession, project_repo: ProjectRepository):
         self.session = session
         self.project_repo = project_repo
 
     # Get concrete project by it's ID
-    def get_project_by_id(self, id: int) -> Project:
+    async def get_project_by_id(self, id: int) -> Project:
         """Returns concrete Project object by it's ID.
 
         Get concrete Project object by given ID
@@ -35,7 +35,7 @@ class ProjectService:
         Project: Found by ID Project object
         """
         # Project object
-        project = self.project_repo.get_by_id(id)
+        project = await self.project_repo.get_by_id(id)
         # Existance check
         if not project:
             raise HTTPException(
@@ -46,7 +46,7 @@ class ProjectService:
         return project
 
     # Get all project (for future(maybe))
-    def get_all_projects(self) -> list[Project]:
+    async def get_all_projects(self) -> list[Project]:
         """Returns list of all Projects objects in database.
 
         Get all Project objects in database
@@ -55,7 +55,7 @@ class ProjectService:
         list[Project]: Project objects
         """
         # List of Project objects
-        projects = self.project_repo.get_all()
+        projects = await self.project_repo.get_all()
 
         # Existance check
         if not projects:
@@ -64,7 +64,7 @@ class ProjectService:
         return projects
 
     # Create new project
-    def create_project(
+    async def create_project(
         self,
         project_data: ProjectCreate,
     ) -> Project:
@@ -78,16 +78,16 @@ class ProjectService:
         """
         try:
             # New project object
-            new_project = self.project_repo.create(project_data)
+            new_project = await self.project_repo.create(project_data)
 
             # Session commit and refresh new project's data
-            self.session.commit()
-            self.session.refresh(new_project)
+            await self.session.commit()
+            await self.session.refresh(new_project)
 
             return new_project
         except IntegrityError:
             # Rolling back failed transaction
-            self.session.rollback()
+            await self.session.rollback()
 
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -95,7 +95,7 @@ class ProjectService:
             )
 
     # Update concrete project
-    def update_project(
+    async def update_project(
         self,
         id: int,
         new_data: ProjectUpdate,
@@ -114,20 +114,20 @@ class ProjectService:
         """
         try:
             # Project object to change
-            project = self.get_project_by_id(id)
-            changed_project = self.project_repo.update(
+            project = await self.get_project_by_id(id)
+            changed_project = await self.project_repo.update(
                 id=project.id, 
                 project_data=new_data
             )
 
             # Session commit and refresh changed project's data
-            self.session.commit()
-            self.session.refresh(changed_project)
+            await self.session.commit()
+            await self.session.refresh(changed_project)
 
             return changed_project
         except IntegrityError:
             # Rolling back failed session transaction
-            self.session.rollback()
+            await self.session.rollback()
 
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -135,7 +135,7 @@ class ProjectService:
             )
 
     # Delete concrete project by it's id
-    def delete_project(self, id: int) -> None:
+    async def delete_project(self, id: int) -> None:
         """Delete concrete Project object by it's ID.
 
         Parameters:
@@ -146,7 +146,7 @@ class ProjectService:
         """
 
         # Project object to delete
-        project = self.get_project_by_id(id)
-        self.project_repo.delete(project)
+        project = await self.get_project_by_id(id)
+        await self.project_repo.delete(project)
 
-        self.session.commit()
+        await self.session.commit()

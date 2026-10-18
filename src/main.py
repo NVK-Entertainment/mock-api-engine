@@ -28,7 +28,7 @@ app = FastAPI(
 # API routers connection
 app.include_router(endpoint_router, tags=['Endpoints Management'])
 app.include_router(project_router, tags=['Projects Managements'])
-app.include_router(mock_router, tags=['Universal Mocks'])
+app.include_router(mock_router, tags=['Mocks Responses'])
 app.include_router(workflow_router, tags=['Workflows'])
 
 # Healthcheck

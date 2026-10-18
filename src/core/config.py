@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     db_password: str = "password"
     db_host: str = "database"
     db_port: int = 5432
-    db_name: str = "pstg"
-    db_driver: str = "postgresql+psycopg"
+    db_name: str = "mock-api-engine"
+    db_driver: str = "postgresql+asyncpg"
 
 
 # Settings object instance

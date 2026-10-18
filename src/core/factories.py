@@ -3,13 +3,13 @@ from src.repositories.endpoint_repository import EndpointRepository
 from src.services.project_service import ProjectService
 from src.repositories.project_repository import ProjectRepository
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 from fastapi import Depends
 from src.database.db import get_session
 
 
-def get_endpoint_service(session: Annotated[Session, Depends(get_session)]) -> EndpointService:
+def get_endpoint_service(session: Annotated[AsyncSession, Depends(get_session)]) -> EndpointService:
     """ Endpoint service factory
         
         Get session instance and create EndpointRepository instance
@@ -31,7 +31,7 @@ def get_endpoint_service(session: Annotated[Session, Depends(get_session)]) -> E
         project_service=project_service
     )
 
-def get_project_service(session: Annotated[Session, Depends(get_session)]) -> ProjectService:
+def get_project_service(session: Annotated[AsyncSession, Depends(get_session)]) -> ProjectService:
     """ Project service factory
         
         Get session instance and create ProjectRepository instance

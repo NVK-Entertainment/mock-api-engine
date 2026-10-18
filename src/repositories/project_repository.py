@@ -1,21 +1,27 @@
-from sqlalchemy.orm import Session
+# Annotations
+from sqlalchemy.ext.asyncio import AsyncSession
+# SQL
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+# Models
 from src.models.project import Project
+# Schemas
 from src.schemas.project_schema import ProjectCreate, ProjectUpdate
 
 
 class ProjectRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
     # Get concrete project by it's id
-    def get_by_id(self, id: int) -> Project:
+    async def get_by_id(self, id: int) -> Project:
         # SQL statement
         stmt = (
             select(Project)
+            .options(selectinload(Project.handles))
             .where(Project.id == id)
         )
-        result = self.session.execute(stmt)
+        result = await self.session.execute(stmt)
         
         # project object
         project = result.scalars().one_or_none()
@@ -23,14 +29,13 @@ class ProjectRepository:
         return project
     
     # Get concrete project by it's name
-    def get_by_name(self, name: int | None) -> Project:
+    async def get_by_name(self, name: int | None) -> Project:
         stmt = (
             select(Project)
-            .where(
-                Project.name==name
-            )
+            .options(selectinload(Project.handles))
+            .where(Project.name==name)
         )
-        result = self.session.execute(stmt)
+        result = await self.session.execute(stmt)
         
         # Project object
         project = result.scalars().first()
@@ -38,11 +43,12 @@ class ProjectRepository:
         return project
 
     # Get all projects (for future (maybe))
-    def get_all(self) -> list[Project]:
+    async def get_all(self) -> list[Project]:
         stmt = (
             select(Project)
+            .options(selectinload(Project.handles))
         )
-        result = self.session.execute(stmt)
+        result = await self.session.execute(stmt)
 
         # List of Project objects
         project = result.scalars().all()
@@ -50,7 +56,7 @@ class ProjectRepository:
         return project
 
     # Add project to database
-    def create(self, project_data: ProjectCreate) -> Project:
+    async def create(self, project_data: ProjectCreate) -> Project:
         # New project object
         new_project = Project(name=project_data.name)
         # Addition to local session list
@@ -58,8 +64,8 @@ class ProjectRepository:
         return new_project
 
     # Update concrete project by it's id
-    def update(self, id: int, project_data: ProjectUpdate) -> Project | None:
-        project = self.get_by_id(id)
+    async def update(self, id: int, project_data: ProjectUpdate) -> Project | None:
+        project = await self.get_by_id(id)
         
         if project is None:
             return None
@@ -72,5 +78,5 @@ class ProjectRepository:
         return project
 
     # Delete concrete project
-    def delete(self, project: Project) -> None:        
-        self.session.delete(project)
+    async def delete(self, project: Project) -> None:        
+        await self.session.delete(project)
