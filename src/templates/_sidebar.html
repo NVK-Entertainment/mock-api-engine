@@ -1,0 +1,65 @@
+<aside class="sidebar" aria-label="Проекты и эндпоинты">
+  <header class="sidebar-head">
+    <h1 class="fs-6 fw-bold m-0">Список проектов</h1>
+    <button type="button" class="btn btn-sm btn-icon" data-action="new-project" title="Новый проект" aria-label="Новый проект">
+      <i class="bi bi-plus-lg"></i>
+    </button>
+  </header>
+
+  <nav class="tree">
+    {% for group in groups %}
+      {% set name = group.project.name if group.project else 'Глобальные' %}
+      <div class="group" data-group="{{ group.key }}">
+        <div class="group-row">
+          <button class="group-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#grp-{{ group.key }}" aria-expanded="true" aria-controls="grp-{{ group.key }}">
+            <i class="bi bi-chevron-right chev"></i>
+            <span class="group-name{% if not group.project %} is-global{% endif %}">{{ name }}</span>
+            <span class="count">{{ group.endpoints|length }}</span>
+          </button>
+          <div class="row-actions">
+            <a class="btn btn-sm btn-icon" href="/ui/endpoints/new{% if group.project %}?project_id={{ group.project.id }}{% endif %}" title="Новый эндпоинт" aria-label="Новый эндпоинт в «{{ name }}»">
+              <i class="bi bi-plus-lg"></i>
+            </a>
+            {% if group.project %}
+            <div class="dropdown">
+              <button class="btn btn-sm btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с проектом «{{ name }}»">
+                <i class="bi bi-three-dots"></i>
+              </button>
+              <ul class="dropdown-menu">
+                <li><button class="dropdown-item" type="button" data-action="rename-project" data-id="{{ group.project.id }}">Переименовать</button></li>
+                <li><button class="dropdown-item text-danger" type="button" data-action="delete-project" data-id="{{ group.project.id }}">Удалить проект</button></li>
+              </ul>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <ul class="endpoints collapse show" id="grp-{{ group.key }}">
+          {% for ep in group.endpoints %}
+            {% set m = ep.method.value %}
+            <li class="ep-row{% if ep.id == selected_id %} selected{% endif %}{% if not ep.is_active %} inactive{% endif %}">
+              <a class="ep-link" href="/ui/endpoints/{{ ep.id }}" title="{{ m }} {{ ep.path }}"{% if ep.id == selected_id %} aria-current="page"{% endif %}>
+                <span class="mbadge m-{{ m }}">{{ SHORT_METHODS.get(m, m) }}</span>
+                <span class="ep-path">{{ ep.path }}</span>
+                {% if ep.scenario.value == 'FAILURE' %}<span class="badge text-bg-danger-subtle text-danger-emphasis" title="Сценарий FAILURE">fail</span>{% endif %}
+                {% if not ep.is_active %}<span class="badge text-bg-secondary-subtle text-secondary-emphasis" title="Эндпоинт выключен">выкл</span>{% endif %}
+              </a>
+              <div class="row-actions dropdown">
+                <button class="btn btn-sm btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с эндпоинтом {{ m }} {{ ep.path }}">
+                  <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><button class="dropdown-item" type="button" data-action="move-endpoint" data-id="{{ ep.id }}">Переместить в проект…</button></li>
+                  <li><button class="dropdown-item" type="button" data-action="clone-endpoint" data-id="{{ ep.id }}">Клонировать в проект…</button></li>
+                  <li><button class="dropdown-item text-danger" type="button" data-action="delete-endpoint" data-id="{{ ep.id }}">Удалить</button></li>
+                </ul>
+              </div>
+            </li>
+          {% else %}
+            <li class="tree-note">Пока нет эндпоинтов</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  </nav>
+</aside>
