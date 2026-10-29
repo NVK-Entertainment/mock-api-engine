@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="empty">
+    <h2 class="fs-4">{% if app_data.endpoints %}Выберите эндпоинт слева{% else %}Эндпоинтов пока нет{% endif %}</h2>
+    <p class="text-body-secondary">Каждый эндпоинт отвечает заданным статусом, заголовками и JSON-телом.</p>
+    <a class="btn btn-primary" href="/ui/endpoints/new">Создать эндпоинт</a>
+  </div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{% if editor.id %}{{ editor.method }} {{ editor.path }}{% else %}Новый эндпоинт{% endif %} · Mock API Engine{% endblock %}
+
+{% block content %}
+<section id="editor" class="editor"
+         data-endpoint-id="{{ editor.id if editor.id is not none else '' }}"
+         data-project-id="{{ editor.project_id if editor.project_id is not none else '' }}"
+         aria-label="{% if editor.id %}Эндпоинт {{ editor.method }} {{ editor.path }}{% else %}Новый эндпоинт{% endif %}">
+
+  <p class="text-body-secondary small mb-2">
+    {% if editor.id %}Находится в{% else %}Новый эндпоинт в{% endif %} <strong class="text-body">{{ editor.scope_name }}</strong>
+  </p>
+
+  <!-- Строка запроса: селектор метода, путь, кнопка -->
+  <form id="request-form" class="input-group request-bar" novalidate>
+    <button class="btn dropdown-toggle method-btn m-{{ editor.method }}" id="method-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Метод запроса" data-method="{{ editor.method }}">{{ editor.method }}</button>
+    <ul class="dropdown-menu">
+      {% for m in METHODS %}
+      <li><button class="dropdown-item method-item m-{{ m }}" type="button" data-method="{{ m }}">{{ m }}</button></li>
+      {% endfor %}
+    </ul>
+    <input id="path" class="form-control font-monospace" type="text" spellcheck="false" autocomplete="off"
+           placeholder="Путь эндпоинта, например /users/1" aria-label="Путь эндпоинта"
+           value="{{ editor.path }}"{% if not editor.id %} autofocus{% endif %}>
+    <button class="btn btn-primary px-4" id="save-btn" type="submit">{% if editor.id %}Сохранить{% else %}Создать{% endif %}</button>
+  </form>
+  <div class="invalid-feedback d-block" id="err-path" hidden></div>
+
+  <div class="d-flex align-items-center gap-1 mt-2 text-body-secondary">
+    <code class="mock-url text-truncate" id="mock-url"></code>
+    <button type="button" class="btn btn-sm btn-icon" id="copy-url" title="Скопировать адрес" aria-label="Скопировать адрес мока"><i class="bi bi-clipboard"></i></button>
+  </div>
+  <p class="small text-body-secondary mt-1 mb-0" id="scenario-hint" hidden>
+    Чтобы получить этот ответ, добавьте в запрос заголовок <code>X-mock-scenario: <span id="scenario-hint-value"></span></code>
+  </p>
+
+  <div class="alert alert-danger mt-3 mb-0" id="server-error" role="alert" hidden></div>
+
+  <!-- Параметры для эндпоинта (заголовки ответа) -->
+  <div class="card mt-3">
+    <div class="card-body">
+      <h2 class="fs-6 fw-bold mb-3">Параметры для эндпоинта <span class="fw-normal small text-body-secondary ms-2">заголовки ответа</span></h2>
+      <table class="table table-sm kv mb-0">
+        <thead>
+          <tr><th scope="col">Ключ</th><th scope="col">Значение</th><th scope="col" class="kv-del"><span class="visually-hidden">Действия</span></th></tr>
+        </thead>
+        <tbody id="headers-body">
+          {% for key, value in editor.headers.items() %}
+          <tr>
+            <td><input class="form-control form-control-sm font-monospace border-0 rounded-0 h-key" aria-label="Ключ" placeholder="Ключ" spellcheck="false" value="{{ key }}"></td>
+            <td><input class="form-control form-control-sm font-monospace border-0 rounded-0 h-value" aria-label="Значение" placeholder="Значение" spellcheck="false" value="{{ value }}"></td>
+            <td class="kv-del"><button type="button" class="btn btn-sm btn-icon row-del" aria-label="Удалить заголовок {{ key }}"><i class="bi bi-x-lg"></i></button></td>
+          </tr>
+          {% endfor %}
+          <tr>
+            <td><input class="form-control form-control-sm font-monospace border-0 rounded-0 h-key" aria-label="Ключ" placeholder="Ключ" spellcheck="false"></td>
+            <td><input class="form-control form-control-sm font-monospace border-0 rounded-0 h-value" aria-label="Значение" placeholder="Значение" spellcheck="false"></td>
+            <td class="kv-del"><button type="button" class="btn btn-sm btn-icon row-del" aria-label="Удалить заголовок"><i class="bi bi-x-lg"></i></button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="invalid-feedback d-block" id="err-headers" hidden></div>
+    </div>
+  </div>
+
+  <!-- HTTP-ответ -->
+  <div class="card mt-3">
+    <div class="card-body">
+      <h2 class="fs-6 fw-bold mb-3">HTTP-ответ</h2>
+
+      <div class="row g-3 mb-3">
+        <div class="col-auto">
+          <div class="form-label small fw-semibold text-body-secondary" id="scenario-label">Сценарий</div>
+          <div class="btn-group" role="radiogroup" aria-labelledby="scenario-label">
+            {% for s in SCENARIOS %}
+            <input type="radio" class="btn-check" name="scenario" id="scenario-{{ s }}" value="{{ s }}" autocomplete="off"{% if editor.scenario == s %} checked{% endif %}>
+            <label class="btn {% if s == 'FAILURE' %}btn-outline-danger{% else %}btn-outline-primary{% endif %} font-monospace btn-sm" for="scenario-{{ s }}">{{ s }}</label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-auto">
+          <label class="form-label small fw-semibold text-body-secondary" for="status">Статус</label>
+          <div class="d-flex align-items-center gap-2">
+            <input id="status" class="form-control form-control-sm font-monospace status-input" inputmode="numeric" maxlength="3" value="{{ editor.status_code }}">
+            <span class="small text-body-secondary" id="status-text"></span>
+          </div>
+        </div>
+        <div class="col-auto">
+          <div class="form-label small fw-semibold text-body-secondary" id="active-label">Приём запросов</div>
+          <div class="form-check form-switch pt-1" title="Выключенный эндпоинт отвечает 404">
+            <input class="form-check-input" type="checkbox" role="switch" id="active" aria-labelledby="active-label"{% if editor.is_active %} checked{% endif %}>
+            <label class="form-check-label" for="active" id="active-text"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-baseline">
+        <label class="form-label small fw-semibold text-body-secondary" for="body">Тело ответа (JSON)</label>
+        <button type="button" class="btn btn-link btn-sm p-0" id="format-body">Форматировать</button>
+      </div>
+      <textarea id="body" class="form-control font-monospace body-input" rows="12" spellcheck="false" aria-describedby="body-state">{{ editor.body_text }}</textarea>
+      <p class="small mt-2 mb-0" id="body-state"></p>
+    </div>
+  </div>
+</section>
+{% endblock %}
