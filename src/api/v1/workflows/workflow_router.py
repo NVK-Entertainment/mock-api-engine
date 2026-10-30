@@ -28,7 +28,7 @@ async def move_endpoint(
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
     project_id: int | None = None
 ) -> EndpointResponse:
-    """Move concrete Endpoint object by it's ID to global or another project scope.
+    """Move concrete Endpoint object by it's ID to another project scope.
 
     Calling EndpointService method move_endpoint_to 
     To move endpoint record to another scope  
@@ -55,7 +55,7 @@ async def clone_endpoint(
     service: Annotated[EndpointService, Depends(get_endpoint_service)],
     project_id: int | None = None,
 ) -> EndpointResponse:
-    """Clone concrete Endpoint object by it's ID to global or another project scope.
+    """Clone concrete Endpoint object by it's ID to another project scope.
 
     Calling EndpointService method "clone_endpoint_to" 
     To clone endpoint record to another scope  
@@ -70,4 +70,29 @@ async def clone_endpoint(
     return await service.clone_endpoint_to(
         endpoint_id, 
         project_id
+    )
+
+# Promote endpoint to global scope
+@router.post(
+    '/endpoints/{endpoint_id}/promote-to-global',
+    status_code=status.HTTP_200_OK,
+)
+async def promote_endpoint(
+    endpoint_id: int,
+    service: Annotated[EndpointService, Depends(get_endpoint_service)],
+) -> EndpointResponse:
+    """Promote (move) concrete Endpoint object by it's ID to global scope
+    
+    Calling EndpointService method "promote_endpoint_to_global"
+    To move endpoint record to global scope
+
+    Parameters:
+    endpoint_id (int): Endpoint to promote object ID
+
+    Returns:
+    Endpoint: Promoted (moved to global scope) Endpoint object
+    """
+
+    return await service.promote_endpoint_to_global(
+        endpoint_id
     )

@@ -347,3 +347,44 @@ class EndpointService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Active endpoint with this combination of parameters already exists in this project"
                 )
+    
+    # Promote (move) endpoint to global scope
+    async def promote_endpoint_to_global(self, endpoint_id: int) -> Endpoint:
+        # Existance check
+        promoted_endpoint = await self.get_endpoint_by_id(endpoint_id)
+        promoted_endpoint.project_id = None
+        try:
+            await self.session.commit()
+            await self.session.refresh(promoted_endpoint)
+
+            return promoted_endpoint
+        except IntegrityError:
+            await self.session.rollback()
+
+            endpoint = await self.get_endpoint_by_id(endpoint_id)
+            
+            # Conflict Endpoint object with given parameters combination
+            conflict_endpoint = await self.get_endpoint_by_params(
+                project_id=None,
+                method=endpoint.method,
+                path=endpoint.path,
+                scenario=endpoint.scenario,
+                only_active=False
+            )
+
+            # Tries to reactivate conflict endpoint
+            if conflict_endpoint and not conflict_endpoint.is_active:
+                conflict_endpoint.is_active = True
+
+                conflict_endpoint.response_body=endpoint.response_body
+
+                await self.session.commit()
+                await self.session.refresh(conflict_endpoint)
+
+                return conflict_endpoint
+            else:
+                # If already active Endpoint record with given combination of parameters exists raises exception
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Active endpoint with this combination of parameters already exists in global scope"
+                )
