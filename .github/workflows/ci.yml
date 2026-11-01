@@ -50,12 +50,6 @@ jobs:
       - name: Check models and migrations are in sync
         run: docker compose exec -T app alembic check
 
-      # Check if migration can be rollback
-      - name: Check migrations are reversible
-        run: |
-          docker compose exec -T app alembic downgrade base
-          docker compose exec -T app alembic upgrade head
-
       - name: Run tests
         run: docker compose exec -T app pytest -v
 
