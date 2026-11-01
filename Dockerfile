@@ -13,9 +13,11 @@ COPY requirements.txt .
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Project code and tests
+# Project code, tests and migrations
 COPY src ./src
 COPY tests ./tests
+COPY alembic.ini ./
+COPY alembic ./alembic
 
 # Port
 EXPOSE 8000

@@ -1,15 +1,68 @@
-# CI Pipeline name
 name: CI-Pipe
 
-# On actions
 on:
-  push: 
+  push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
 
-# Jobs to do in CI pipeline
+permissions:
+  contents: read
+
+# Cancel outdated runs of the same branch / PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Run tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Create .env
+        run: cp .env.example .env
+
+      - name: Build and start containers
+        run: docker compose up -d --build --wait
+
+      - name: Healthcheck
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/; then
+              echo
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App did not become healthy in time"
+          exit 1
+
+      # Check if migrations can't be applied
+      - name: Apply migrations
+        run: docker compose exec -T app alembic upgrade head
+
+      # Check if migrations are up to date
+      - name: Check models and migrations are in sync
+        run: docker compose exec -T app alembic check
+
+      # Check if migration can be rollback
+      - name: Check migrations are reversible
+        run: |
+          docker compose exec -T app alembic downgrade base
+          docker compose exec -T app alembic upgrade head
+
+      - name: Run tests
+        run: docker compose exec -T app pytest -v
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v
