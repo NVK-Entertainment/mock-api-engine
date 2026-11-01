@@ -1,0 +1,15 @@
+# CI Pipeline name
+name: CI-Pipe
+
+# On actions
+on:
+  push: 
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+# Jobs to do in CI pipeline
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-24.04
