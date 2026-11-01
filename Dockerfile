@@ -10,10 +10,12 @@ WORKDIR /app
 
 # Dependencies
 COPY requirements.txt .
+COPY pyproject.toml ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Project code
+# Project code and tests
 COPY src ./src
+COPY tests ./tests
 
 # Port
 EXPOSE 8000
