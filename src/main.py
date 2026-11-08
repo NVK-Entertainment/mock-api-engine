@@ -40,7 +40,7 @@ app.mount('/static', StaticFiles(directory=BASE_DIR / 'src' / 'static'), name='s
 
 # Healthcheck
 @app.get(
-    '/', 
+    '/healthcheck', 
     include_in_schema=False, 
     status_code=status.HTTP_200_OK,
 )

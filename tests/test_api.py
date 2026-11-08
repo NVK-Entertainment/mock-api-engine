@@ -14,7 +14,7 @@ from src.main import app
 
 # GET /
 async def test_healthcheck(client: AsyncClient):
-    response = await client.get(url="/")
+    response = await client.get(url="/healthcheck")
     
     assert response.status_code == 200
     assert response.json() == {'Healthcheck':'passed!'}
