@@ -13,16 +13,13 @@
   <link href="/static/app.css" rel="stylesheet">
 </head>
 <body>
-  <div class="app">
-    {% include "_sidebar.html" %}
-    <main class="main">
-      {% block content %}{% endblock %}
-    </main>
-  </div>
+  {% include "_navbar.html" %}
+
+  {% block body %}{% endblock %}
 
   <div id="toasts" class="position-fixed bottom-0 end-0 p-3" role="status" aria-live="polite"></div>
 
-  <!-- Общее модальное окно для действий из сайдбара -->
+  <!-- Общее модальное окно для простых действий (проект, подтверждения удаления) -->
   <div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <form class="modal-content" id="actionForm">
@@ -39,8 +36,9 @@
     </div>
   </div>
 
-  <script type="application/json" id="app-data">{{ app_data|tojson }}</script>
+  <script type="application/json" id="app-data">{{ (app_data if app_data is defined else {})|tojson }}</script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/static/app.js"></script>
+  <script src="/static/common.js"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -82,3 +82,22 @@ table.kv tr:last-child .row-del { visibility: hidden; }
   .main { padding: 16px 14px 40px; }
 }
 @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+
+/* ---------- навбар ---------- */
+.app-navbar { background: var(--bs-body-bg); }
+.app-navbar .navbar-brand { color: var(--bs-body-color); }
+.app-navbar .nav-link { color: var(--bs-secondary-color); padding: 0.9rem 0.75rem; }
+.app-navbar .nav-link.active { color: var(--bs-body-color); font-weight: 600; }
+
+/* ---------- главная (заглушка) ---------- */
+.home-hero { max-width: 640px; margin: 14vh auto 0; }
+
+/* ---------- страница проектов ---------- */
+.projects-page { max-width: 880px; }
+.projects-page .accordion-body { padding: 1rem 0.25rem; }
+.project-card .card-header { padding: 0.5rem 0.75rem; background: var(--bs-tertiary-bg); }
+.toggle-card .chev, .toggle-card.collapsed .chev { transition: transform .12s; }
+.toggle-card .chev { transform: rotate(90deg); }
+.toggle-card.collapsed .chev { transform: none; }
+.endpoint-row { padding: 0.4rem 0.75rem; flex-wrap: nowrap; }
+.endpoint-row .ep-path { min-width: 0; }
