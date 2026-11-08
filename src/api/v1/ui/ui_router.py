@@ -27,7 +27,7 @@ templates.env.globals.update(
 )
 
 # Api router object (HTML pages, not shown in OpenAPI schema)
-router = APIRouter(prefix='/ui', include_in_schema=False)
+router = APIRouter(include_in_schema=False)
 
 _METHOD_ORDER = [m.value for m in HttpMethods]
 
@@ -43,12 +43,22 @@ def _sort_endpoints(endpoints: list[Endpoint]) -> list[Endpoint]:
     )
 
 
+def _nav_context(request: Request) -> dict:
+    """Which top-nav link is 'active', based on the current path."""
+    path = request.url.path
+    return {
+        'nav_active': 'projects' if path.startswith('/projects') else
+                      'endpoints' if path.startswith('/endpoints') else
+                      'home' if path == '/' else None,
+    }
+
+
 def _base_context(
     projects: list[Project],
     endpoints: list[Endpoint],
     selected_id: int | None = None,
 ) -> dict:
-    """Data for the sidebar tree and for the page scripts."""
+    """Data for the endpoint-workspace sidebar (groups) and its page scripts."""
     projects = sorted(projects, key=lambda p: p.name.lower())
     groups = [{
         'key': 'global',
@@ -80,7 +90,7 @@ def _base_context(
 
 
 def _editor_context(endpoint: Endpoint | None, project: Project | None) -> dict:
-    """Data for the endpoint editor form."""
+    """Data for the endpoint editor form (full page)."""
     if endpoint is None:
         return {
             'id': None,
@@ -112,21 +122,46 @@ def _editor_context(endpoint: Endpoint | None, project: Project | None) -> dict:
     }
 
 
-@router.get('', response_class=HTMLResponse)
-async def ui_index(
+def _endpoint_to_dict(e: Endpoint) -> dict:
+    """Full endpoint data for the projects page (used to pre-fill the edit modal)."""
+    return {
+        'id': e.id,
+        'project_id': e.project_id,
+        'method': e.method.value,
+        'path': e.path,
+        'status_code': e.status_code,
+        'response_headers': e.response_headers,
+        'response_body': e.response_body,
+        'scenario': e.scenario.value,
+        'is_active': e.is_active,
+    }
+
+
+# ---------- Home ----------
+
+@router.get('/', response_class=HTMLResponse)
+async def ui_home(request: Request):
+    """Landing page (placeholder) with links into the endpoint workspace and the projects page."""
+    return templates.TemplateResponse(request, 'home.html', _nav_context(request))
+
+
+# ---------- Endpoint workspace (sidebar + one endpoint at a time) ----------
+
+@router.get('/endpoints', response_class=HTMLResponse)
+async def ui_endpoints(
     request: Request,
     endpoint_service: Annotated[EndpointService, Depends(get_endpoint_service)],
     project_service: Annotated[ProjectService, Depends(get_project_service)],
 ):
-    """Main page: sidebar and empty state."""
+    """Endpoint workspace: sidebar and empty state."""
     context = _base_context(
         await project_service.get_all_projects(),
         await endpoint_service.get_all_endpoints(),
     )
-    return templates.TemplateResponse(request, 'index.html', context)
+    context.update(_nav_context(request))
+    return templates.TemplateResponse(request, 'endpoints.html', context)
 
 
-# Must be declared before '/endpoints/{endpoint_id}' to win over the int path param
 @router.get('/endpoints/new', response_class=HTMLResponse)
 async def ui_new_endpoint(
     request: Request,
@@ -138,15 +173,16 @@ async def ui_new_endpoint(
     projects = await project_service.get_all_projects()
     project = next((p for p in projects if p.id == project_id), None)
     if project_id is not None and project is None:
-        return RedirectResponse('/ui')
+        return RedirectResponse('/endpoints')
 
     context = _base_context(projects, await endpoint_service.get_all_endpoints())
     context['editor'] = _editor_context(None, project)
+    context.update(_nav_context(request))
     return templates.TemplateResponse(request, 'editor.html', context)
 
 
-@router.get('/endpoints/{endpoint_id}', response_class=HTMLResponse)
-async def ui_endpoint(
+@router.get('/endpoints/{endpoint_id}/edit', response_class=HTMLResponse)
+async def ui_edit_endpoint(
     endpoint_id: int,
     request: Request,
     endpoint_service: Annotated[EndpointService, Depends(get_endpoint_service)],
@@ -156,8 +192,8 @@ async def ui_endpoint(
     try:
         endpoint = await endpoint_service.get_endpoint_by_id(endpoint_id)
     except HTTPException:
-        # Endpoint was deleted (e.g. in another tab) - go back to the main page
-        return RedirectResponse('/ui')
+        # Endpoint was deleted (e.g. in another tab) - go back to the workspace
+        return RedirectResponse('/endpoints')
 
     projects = await project_service.get_all_projects()
     project = next((p for p in projects if p.id == endpoint.project_id), None)
@@ -168,4 +204,36 @@ async def ui_endpoint(
         selected_id=endpoint.id,
     )
     context['editor'] = _editor_context(endpoint, project)
+    context.update(_nav_context(request))
     return templates.TemplateResponse(request, 'editor.html', context)
+
+
+# ---------- Projects page (full CRUD for projects and their endpoints) ----------
+
+@router.get('/projects', response_class=HTMLResponse)
+async def ui_projects(
+    request: Request,
+    endpoint_service: Annotated[EndpointService, Depends(get_endpoint_service)],
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
+):
+    """Projects page: every project with its endpoints, plus the global scope."""
+    projects = sorted(await project_service.get_all_projects(), key=lambda p: p.name.lower())
+    endpoints = await endpoint_service.get_all_endpoints()
+
+    project_groups = [
+        {'project': p, 'endpoints': _sort_endpoints([e for e in endpoints if e.project_id == p.id])}
+        for p in projects
+    ]
+    global_endpoints = _sort_endpoints([e for e in endpoints if e.project_id is None])
+
+    context = {
+        'projects': projects,
+        'project_groups': project_groups,
+        'global_endpoints': global_endpoints,
+        'app_data': {
+            'projects': [{'id': p.id, 'name': p.name} for p in projects],
+            'endpoints': [_endpoint_to_dict(e) for e in endpoints],
+        },
+    }
+    context.update(_nav_context(request))
+    return templates.TemplateResponse(request, 'projects.html', context)

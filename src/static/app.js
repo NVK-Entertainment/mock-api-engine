@@ -1,62 +1,9 @@
+// Логика страниц рабочего пространства эндпоинтов: /endpoints, /endpoints/new, /endpoints/{id}/edit.
 (() => {
   'use strict';
 
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const { $, $$, api, ApiError, toast, flash, reload, go, openActionModal, textField } = window.App;
   const APP = JSON.parse($('#app-data').textContent);
-  let leaving = false; // true, когда уходим со страницы сами (после сохранения)
-
-  /* ---------- утилиты ---------- */
-
-  function toast(text, kind = 'success') {
-    const el = document.createElement('div');
-    el.className = `alert alert-${kind === 'error' ? 'danger' : 'dark'} shadow-sm py-2 px-3 mb-2`;
-    el.textContent = text;
-    $('#toasts').append(el);
-    setTimeout(() => el.remove(), kind === 'error' ? 6000 : 2500);
-  }
-
-  // Сообщение, которое нужно показать после перезагрузки страницы
-  function flash(text) {
-    try { sessionStorage.setItem('flash', text); } catch { /* хранилище недоступно */ }
-  }
-  function reload() { leaving = true; location.reload(); }
-  function go(url) { leaving = true; location.assign(url); }
-
-  function formatDetail(detail) {
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail)) {
-      return detail.map((d) => {
-        const loc = (d.loc || []).filter((p) => p !== 'body').join('.');
-        return loc ? `${loc}: ${d.msg}` : d.msg;
-      }).join('; ');
-    }
-    return null;
-  }
-
-  async function api(method, url, body) {
-    let res;
-    try {
-      res = await fetch(url, {
-        method,
-        headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      });
-    } catch {
-      throw new Error('Нет связи с сервером. Проверьте, что бэкенд запущен.');
-    }
-    if (!res.ok) {
-      let message = `Ошибка ${res.status}`;
-      try { message = formatDetail((await res.json()).detail) || message; } catch { /* не JSON */ }
-      throw new Error(message);
-    }
-    return res.status === 204 ? null : res.json();
-  }
-
-  try {
-    const msg = sessionStorage.getItem('flash');
-    if (msg) { sessionStorage.removeItem('flash'); toast(msg); }
-  } catch { /* ignore */ }
 
   /* ---------- сайдбар ---------- */
 
@@ -83,70 +30,15 @@
     list.addEventListener('shown.bs.collapse', () => { collapsed = collapsed.filter((k) => k !== key); saveCollapsed(); });
   });
 
-  /* ---------- модальное окно действий ---------- */
-
-  const modalEl = $('#actionModal');
-  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  const form = $('#actionForm');
-  const body = $('#actionBody');
-  const confirmBtn = $('#actionConfirm');
-  let current = null;
-
-  /**
-   * title, confirm — тексты; danger — красная кнопка;
-   * build(body) наполняет тело окна и возвращает { valid(), run() }.
-   */
-  function openModal({ title, confirm, danger, build }) {
-    $('#actionModalTitle').textContent = title;
-    confirmBtn.textContent = confirm;
-    confirmBtn.className = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
-    body.replaceChildren();
-    current = build(body);
-    const sync = () => { confirmBtn.disabled = !current.valid(); };
-    body.oninput = body.onchange = sync;
-    sync();
-    modal.show();
-  }
-
-  modalEl.addEventListener('shown.bs.modal', () => {
-    const first = $('input, select', body);
-    if (first) first.focus();
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!current || confirmBtn.disabled) return;
-    confirmBtn.disabled = true;
-    try {
-      await current.run();
-    } catch (err) {
-      toast(err.message, 'error');
-      confirmBtn.disabled = !current.valid();
-    }
-  });
-
-  const el = (tag, props = {}, text) => {
-    const node = Object.assign(document.createElement(tag), props);
-    if (text !== undefined) node.textContent = text;
-    return node;
-  };
-
-  function textField(label, value, hint) {
-    const input = el('input', { className: 'form-control', id: 'modal-field', value: value || '', maxLength: 32 });
-    body.append(el('label', { className: 'form-label small fw-semibold text-body-secondary', htmlFor: 'modal-field' }, label), input);
-    if (hint) body.append(el('div', { className: 'form-text' }, hint));
-    return input;
-  }
-
   const projectById = (id) => APP.projects.find((p) => p.id === id);
   const endpointById = (id) => APP.endpoints.find((e) => e.id === id);
   const editor = $('#editor');
   const openEndpointId = editor && editor.dataset.endpointId ? Number(editor.dataset.endpointId) : null;
 
   const actions = {
-    'new-project': () => openModal({
+    'new-project': () => openActionModal({
       title: 'Новый проект', confirm: 'Создать',
-      build: () => {
+      build: (body) => {
         const input = textField('Название', '', 'Не длиннее 32 символов, название уникально.');
         return {
           valid: () => input.value.trim().length > 0,
@@ -157,7 +49,7 @@
 
     'rename-project': (id) => {
       const project = projectById(id);
-      openModal({
+      openActionModal({
         title: 'Переименовать проект', confirm: 'Сохранить',
         build: () => {
           const input = textField('Название', project.name, 'Не длиннее 32 символов, название уникально.');
@@ -172,10 +64,10 @@
     'delete-project': (id) => {
       const project = projectById(id);
       const count = APP.endpoints.filter((e) => e.project_id === id).length;
-      openModal({
+      openActionModal({
         title: `Удалить проект «${project.name}»?`, confirm: 'Удалить', danger: true,
-        build: () => {
-          body.append(el('p', { className: 'mb-0' }, count
+        build: (body) => {
+          body.append(App.el('p', { className: 'mb-0' }, count
             ? `Вместе с ним удалятся эндпоинты проекта (${count}). Это нельзя отменить.`
             : 'В проекте нет эндпоинтов.'));
           return {
@@ -188,11 +80,11 @@
 
     'delete-endpoint': (id) => {
       const ep = endpointById(id);
-      openModal({
+      openActionModal({
         title: 'Удалить эндпоинт?', confirm: 'Удалить', danger: true,
-        build: () => {
-          const p = el('p', { className: 'mb-0' });
-          p.append(el('code', {}, `${ep.method} ${ep.path}`), ' будет удалён.');
+        build: (body) => {
+          const p = App.el('p', { className: 'mb-0' });
+          p.append(App.el('code', {}, `${ep.method} ${ep.path}`), ' будет удалён.');
           body.append(p);
           return {
             valid: () => true,
@@ -200,6 +92,16 @@
           };
         },
       });
+    },
+
+    'make-global': async (id) => {
+      try {
+        await api('PATCH', `/api/v1/management/endpoints/${id}`, { project_id: null });
+        flash('Эндпоинт стал глобальным');
+        reload();
+      } catch (err) {
+        toast(err instanceof ApiError ? err.message : 'Не удалось сделать эндпоинт глобальным', 'error');
+      }
     },
   };
 
@@ -209,20 +111,21 @@
       const ep = endpointById(id);
       const isMove = kind === 'move';
       const options = APP.projects.filter((p) => p.id !== ep.project_id);
-      openModal({
+      openActionModal({
         title: isMove ? 'Переместить эндпоинт' : 'Клонировать эндпоинт',
         confirm: isMove ? 'Переместить' : 'Клонировать',
-        build: () => {
-          body.append(el('p', {}, ''));
-          body.lastChild.append(el('code', {}, `${ep.method} ${ep.path}`));
+        build: (body) => {
+          const p = App.el('p', {}, '');
+          p.append(App.el('code', {}, `${ep.method} ${ep.path}`));
+          body.append(p);
           if (!options.length) {
-            body.append(el('div', { className: 'form-text' }, 'Нет других проектов. Сначала создайте проект.'));
+            body.append(App.el('div', { className: 'form-text' }, 'Нет других проектов. Сначала создайте проект.'));
             return { valid: () => false, run: async () => {} };
           }
-          const select = el('select', { className: 'form-select', id: 'modal-field' });
-          select.append(el('option', { value: '' }, 'Выберите проект'));
-          options.forEach((p) => select.append(el('option', { value: String(p.id) }, p.name)));
-          body.append(el('label', { className: 'form-label small fw-semibold text-body-secondary', htmlFor: 'modal-field' }, 'Проект'), select);
+          const select = App.el('select', { className: 'form-select', id: 'modal-field' });
+          select.append(App.el('option', { value: '' }, 'Выберите проект'));
+          options.forEach((p) => select.append(App.el('option', { value: String(p.id) }, p.name)));
+          body.append(App.el('label', { className: 'form-label small fw-semibold text-body-secondary', htmlFor: 'modal-field' }, 'Проект'), select);
           return {
             valid: () => select.value !== '',
             run: async () => {
@@ -231,7 +134,7 @@
               const name = projectById(target).name;
               flash(isMove ? `Перемещён в «${name}»` : `Клонирован в «${name}»`);
               // При переносе открытого эндпоинта может получиться другая запись (реактивация дубликата)
-              if (isMove && openEndpointId === id) go(`/ui/endpoints/${result.id}`); else reload();
+              if (isMove && openEndpointId === id) go(`/endpoints/${result.id}/edit`); else reload();
             },
           };
         },
@@ -341,11 +244,10 @@
     const { errors } = validate(d);
 
     // Адрес мока и подсказка про сценарий
-    const scope = projectId;
-    const url = `${location.origin}/api/v1/mock${scope !== null ? `/projects/${scope}` : ''}${normalizePath(d.path)}`;
+    const url = `${location.origin}/api/v1/mock${projectId !== null ? `/projects/${projectId}` : ''}${normalizePath(d.path)}`;
     const mock = $('#mock-url');
     mock.title = url;
-    mock.replaceChildren(el('b', { className: `m-${d.method}` }, d.method), ` ${url}`);
+    mock.replaceChildren(App.el('b', { className: `m-${d.method}` }, d.method), ` ${url}`);
     $('#scenario-hint').hidden = d.scenario === 'SUCCESS';
     $('#scenario-hint-value').textContent = d.scenario;
 
@@ -437,7 +339,7 @@
       if (isNew) {
         const saved = await api('POST', '/api/v1/management/endpoints', { ...payload, project_id: projectId });
         flash('Эндпоинт создан');
-        go(`/ui/endpoints/${saved.id}`);
+        go(`/endpoints/${saved.id}/edit`);
       } else {
         await api('PATCH', `/api/v1/management/endpoints/${endpointId}`, payload);
         flash('Сохранено');
@@ -465,7 +367,7 @@
 
   // Уход со страницы с несохранёнными правками (ссылки, перезагрузка, закрытие вкладки)
   window.addEventListener('beforeunload', (e) => {
-    if (!leaving && isDirty()) { e.preventDefault(); e.returnValue = ''; }
+    if (!window.__leaving && isDirty()) { e.preventDefault(); e.returnValue = ''; }
   });
 
   refresh();

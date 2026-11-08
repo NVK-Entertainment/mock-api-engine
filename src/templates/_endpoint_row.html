@@ -1,0 +1,53 @@
+{% set m = ep.method.value %}
+<li class="list-group-item d-flex align-items-center gap-1 endpoint-row{% if not ep.is_active %} inactive{% endif %}" data-endpoint-id="{{ ep.id }}">
+  <span class="mbadge m-{{ m }}">{{ SHORT_METHODS.get(m, m) }}</span>
+  <span class="ep-path font-monospace small text-truncate flex-grow-1" title="{{ m }} {{ ep.path }}">{{ ep.path }}</span>
+  {% if ep.scenario.value == 'FAILURE' %}<span class="badge text-bg-danger-subtle text-danger-emphasis">fail</span>{% endif %}
+  {% if not ep.is_active %}<span class="badge text-bg-secondary-subtle text-secondary-emphasis">выкл</span>{% endif %}
+
+  <button class="btn btn-sm btn-icon" type="button" data-action="edit-endpoint" data-id="{{ ep.id }}" title="Изменить" aria-label="Изменить {{ m }} {{ ep.path }}">
+    <i class="bi bi-pencil"></i>
+  </button>
+
+  <div class="dropdown">
+    <button class="btn btn-sm btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Переместить" aria-label="Переместить {{ m }} {{ ep.path }}">
+      <i class="bi bi-arrow-left-right"></i>
+    </button>
+    <ul class="dropdown-menu">
+      <li><h6 class="dropdown-header">Переместить в проект</h6></li>
+      {% set move_targets = projects|rejectattr('id', 'equalto', ep.project_id)|list %}
+      {% if not move_targets %}
+      <li><span class="dropdown-item-text text-body-secondary small">Нет других проектов</span></li>
+      {% endif %}
+      {% for p in move_targets %}
+      <li><button class="dropdown-item" type="button" data-action="move-endpoint" data-id="{{ ep.id }}" data-target="{{ p.id }}">{{ p.name }}</button></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="dropdown">
+    <button class="btn btn-sm btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Клонировать" aria-label="Клонировать {{ m }} {{ ep.path }}">
+      <i class="bi bi-copy"></i>
+    </button>
+    <ul class="dropdown-menu">
+      <li><h6 class="dropdown-header">Клонировать в проект</h6></li>
+      {% set clone_targets = projects|rejectattr('id', 'equalto', ep.project_id)|list %}
+      {% if not clone_targets %}
+      <li><span class="dropdown-item-text text-body-secondary small">Нет других проектов</span></li>
+      {% endif %}
+      {% for p in clone_targets %}
+      <li><button class="dropdown-item" type="button" data-action="clone-endpoint" data-id="{{ ep.id }}" data-target="{{ p.id }}">{{ p.name }}</button></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if ep.project_id is not none %}
+  <button class="btn btn-sm btn-icon" type="button" data-action="make-global" data-id="{{ ep.id }}" title="Сделать глобальным" aria-label="Сделать глобальным {{ m }} {{ ep.path }}">
+    <i class="bi bi-globe"></i>
+  </button>
+  {% endif %}
+
+  <button class="btn btn-sm btn-icon text-danger" type="button" data-action="delete-endpoint" data-id="{{ ep.id }}" title="Удалить" aria-label="Удалить {{ m }} {{ ep.path }}">
+    <i class="bi bi-trash"></i>
+  </button>
+</li>

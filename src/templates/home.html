@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block body %}
+<main class="container">
+  <div class="home-hero text-center">
+    <h1 class="fw-bold">Mock API Engine</h1>
+    <p class="text-body-secondary mb-4">Управляйте мок-эндпоинтами и проектами, в которых они сгруппированы.</p>
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+      <a class="btn btn-primary btn-lg px-4" href="/endpoints">
+        <i class="bi bi-code-slash me-1"></i> Редактировать эндпоинты
+      </a>
+      <a class="btn btn-outline-primary btn-lg px-4" href="/projects">
+        <i class="bi bi-folder2-open me-1"></i> Управление проектами
+      </a>
+    </div>
+  </div>
+</main>
+{% endblock %}

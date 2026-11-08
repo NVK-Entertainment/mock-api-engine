@@ -17,7 +17,7 @@
             <span class="count">{{ group.endpoints|length }}</span>
           </button>
           <div class="row-actions">
-            <a class="btn btn-sm btn-icon" href="/ui/endpoints/new{% if group.project %}?project_id={{ group.project.id }}{% endif %}" title="Новый эндпоинт" aria-label="Новый эндпоинт в «{{ name }}»">
+            <a class="btn btn-sm btn-icon" href="/endpoints/new{% if group.project %}?project_id={{ group.project.id }}{% endif %}" title="Новый эндпоинт" aria-label="Новый эндпоинт в «{{ name }}»">
               <i class="bi bi-plus-lg"></i>
             </a>
             {% if group.project %}
@@ -38,7 +38,7 @@
           {% for ep in group.endpoints %}
             {% set m = ep.method.value %}
             <li class="ep-row{% if ep.id == selected_id %} selected{% endif %}{% if not ep.is_active %} inactive{% endif %}">
-              <a class="ep-link" href="/ui/endpoints/{{ ep.id }}" title="{{ m }} {{ ep.path }}"{% if ep.id == selected_id %} aria-current="page"{% endif %}>
+              <a class="ep-link" href="/endpoints/{{ ep.id }}/edit" title="{{ m }} {{ ep.path }}"{% if ep.id == selected_id %} aria-current="page"{% endif %}>
                 <span class="mbadge m-{{ m }}">{{ SHORT_METHODS.get(m, m) }}</span>
                 <span class="ep-path">{{ ep.path }}</span>
                 {% if ep.scenario.value == 'FAILURE' %}<span class="badge text-bg-danger-subtle text-danger-emphasis" title="Сценарий FAILURE">fail</span>{% endif %}
@@ -51,6 +51,9 @@
                 <ul class="dropdown-menu">
                   <li><button class="dropdown-item" type="button" data-action="move-endpoint" data-id="{{ ep.id }}">Переместить в проект…</button></li>
                   <li><button class="dropdown-item" type="button" data-action="clone-endpoint" data-id="{{ ep.id }}">Клонировать в проект…</button></li>
+                  {% if ep.project_id is not none %}
+                  <li><button class="dropdown-item" type="button" data-action="make-global" data-id="{{ ep.id }}">Сделать глобальным</button></li>
+                  {% endif %}
                   <li><button class="dropdown-item text-danger" type="button" data-action="delete-endpoint" data-id="{{ ep.id }}">Удалить</button></li>
                 </ul>
               </div>

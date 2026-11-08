@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Проекты · Mock API Engine{% endblock %}
+
+{% block body %}
+<main class="container projects-page py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="fs-4 fw-bold m-0">Проекты и эндпоинты</h1>
+    <button class="btn btn-primary btn-sm" type="button" data-action="new-project">
+      <i class="bi bi-plus-lg"></i> Новый проект
+    </button>
+  </div>
+
+  <div class="accordion" id="scopeAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#scope-projects" aria-expanded="true" aria-controls="scope-projects" id="scope-projects-btn">
+          Проекты <span class="badge text-bg-secondary ms-2">{{ projects|length }}</span>
+        </button>
+      </h2>
+      <div id="scope-projects" class="accordion-collapse collapse show" data-bs-parent="#scopeAccordion">
+        <div class="accordion-body">
+          {% if not project_groups %}
+          <p class="text-body-secondary mb-0">Пока нет ни одного проекта. Создайте первый кнопкой выше.</p>
+          {% endif %}
+          <div class="vstack gap-2">
+            {% for group in project_groups %}
+            {% set project = group.project %}
+            <div class="card project-card">
+              <div class="card-header d-flex align-items-center gap-1">
+                <button class="btn btn-sm btn-icon toggle-card" type="button" data-bs-toggle="collapse" data-bs-target="#proj-{{ project.id }}" aria-expanded="true" aria-controls="proj-{{ project.id }}">
+                  <i class="bi bi-chevron-right chev"></i>
+                </button>
+                <span class="fw-semibold flex-grow-1 text-truncate">{{ project.name }}</span>
+                <span class="badge text-bg-secondary">{{ group.endpoints|length }}</span>
+                <button class="btn btn-sm btn-icon" type="button" data-action="add-endpoint" data-project-id="{{ project.id }}" title="Новый эндпоинт" aria-label="Новый эндпоинт в «{{ project.name }}»">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" type="button" data-action="rename-project" data-id="{{ project.id }}" title="Переименовать" aria-label="Переименовать «{{ project.name }}»">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-icon text-danger" type="button" data-action="delete-project" data-id="{{ project.id }}" title="Удалить проект" aria-label="Удалить «{{ project.name }}»">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              <div id="proj-{{ project.id }}" class="collapse show">
+                <ul class="list-group list-group-flush">
+                  {% for ep in group.endpoints %}
+                    {% include "_endpoint_row.html" %}
+                  {% else %}
+                  <li class="list-group-item text-body-secondary small">Пока нет эндпоинтов</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#scope-global" aria-expanded="false" aria-controls="scope-global" id="scope-global-btn">
+          Глобальный scope <span class="badge text-bg-secondary ms-2">{{ global_endpoints|length }}</span>
+        </button>
+      </h2>
+      <div id="scope-global" class="accordion-collapse collapse" data-bs-parent="#scopeAccordion">
+        <div class="accordion-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <p class="text-body-secondary small mb-0">Эндпоинты вне проектов, доступны по короткому адресу мока.</p>
+            <button class="btn btn-sm btn-outline-primary text-nowrap" type="button" data-action="add-endpoint" data-project-id="" title="Новый глобальный эндпоинт">
+              <i class="bi bi-plus-lg"></i> Новый эндпоинт
+            </button>
+          </div>
+          <ul class="list-group">
+            {% for ep in global_endpoints %}
+              {% include "_endpoint_row.html" %}
+            {% else %}
+            <li class="list-group-item text-body-secondary small">Пока нет глобальных эндпоинтов</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+{% include "_endpoint_modal.html" %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/projects.js"></script>{% endblock %}
