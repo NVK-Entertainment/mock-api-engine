@@ -108,10 +108,6 @@ class EndpointService:
         # List of Endpoint objects
         endpoints = await self.endpoint_repo.get_all()
 
-        # Existance check
-        if not endpoints:
-            return []
-
         return endpoints
 
     # Create new endpoint

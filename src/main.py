@@ -1,5 +1,6 @@
 # Fastapi dependencies
 from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 # Database dependencies
@@ -27,6 +28,15 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan
     )
+
+# App's CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # API routers connection
 app.include_router(endpoint_router, tags=['Endpoints Management'])
