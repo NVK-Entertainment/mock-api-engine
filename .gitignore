@@ -12,3 +12,6 @@ venv/
 
 # Environments
 .env
+
+# Pytest
+.pytest_cache/
